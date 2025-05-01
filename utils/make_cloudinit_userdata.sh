@@ -32,13 +32,13 @@ echo "bootcmd:" >> $cloudinit_file
 echo "  - [ cloud-init-per, once, mkdir, -m, 0755, -p, '$destination_dir' ]" >> $cloudinit_file
 
 echo "write_files:" >> $cloudinit_file
-echo "  - path: $destination_dir/env" >> $cloudinit_file
+echo "  - path: $destination_dir/installenv" >> $cloudinit_file
 echo "    permissions: 0755" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "../scripts/env"
+done < "../scripts/installenv"
 
 # onboarding script
 echo "  - path: $destination_dir/onboarding.sh" >> $cloudinit_file

@@ -2,11 +2,11 @@
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 
-# Source the .env file
-if [ -f "$script_dir/env" ]; then
-  source "$script_dir/env"
+# Source the installenv file
+if [ -f "$script_dir/installenv" ]; then
+  source "$script_dir/installenv"
 else
-  echo "Error: env file not found in $script_dir"
+  echo "Error: installenv file not found in $script_dir"
   exit 1
 fi
 

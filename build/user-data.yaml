@@ -14,7 +14,7 @@ packages:
 bootcmd:
   - [ cloud-init-per, once, mkdir, -m, 0755, -p, '/opt/F5Networks/onboarding' ]
 write_files:
-  - path: /opt/F5Networks/onboarding/env
+  - path: /opt/F5Networks/onboarding/installenv
     permissions: 0755
     content: |
       #!/bin/bash
@@ -60,11 +60,11 @@ write_files:
       
       script_dir=$(dirname "${BASH_SOURCE[0]}")
       
-      # Source the .env file
-      if [ -f "$script_dir/env" ]; then
-        source "$script_dir/env"
+      # Source the installenv file
+      if [ -f "$script_dir/installenv" ]; then
+        source "$script_dir/installenv"
       else
-        echo "Error: env file not found in $script_dir"
+        echo "Error: installenv file not found in $script_dir"
         exit 1
       fi
       
