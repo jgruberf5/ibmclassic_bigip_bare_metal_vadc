@@ -1,0 +1,146 @@
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    eth0:
+      dhcp4: no
+      dhcp6: no
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      virtual-function-count: 2
+    eth1:
+      dhcp4: no
+      dhcp6: no
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      virtual-function-count: 2
+    eth2:
+      dhcp4: no
+      dhcp6: no
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      virtual-function-count: 2
+    eth3:
+      dhcp4: no
+      dhcp6: no
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      virtual-function-count: 2
+    vf1:
+      match:
+        name: ens1f0v0
+      link: eth0
+      dhcp4: no
+      dhcp6: no
+    vf2:
+      match:
+        name: ens1f0v1
+      link: eth0
+      dhcp4: no
+      dhcp6: no
+    vf3:
+      match:
+        name: ens1f1v0
+      link: eth1
+      dhcp4: no
+      dhcp6: no
+    vf4:
+      match:
+        name: ens1f1v1
+      link: eth1
+      dhcp4: no
+      dhcp6: no
+    vf5:
+      match:
+        name: ens1f2v0
+      link: eth2
+      dhcp4: no
+      dhcp6: no
+    vf6:
+      match:
+        name: ens1f2v1
+      link: eth2
+      dhcp4: no
+      dhcpssh_authorized_keys:6: no
+    vf7:
+      match:
+        name: ens1f3v0
+      link: eth3
+      dhcp4: no
+      dhcp6: no
+    vf8:
+      match:
+        name: ens1f3v1
+      link: eth3
+      dhcp4: no
+      dhcp6: no
+  bonds:
+    bond0:
+      interfaces:
+        - eth0
+        - eth2
+      parameters:
+        mode: 802.3ad
+        lacp-rate: fast
+        mii-monitor-interval: 100
+        transmit-hash-policy: layer3+4
+        all-slaves-active: true
+        up-delay: 0
+        down-delay: 0
+    bond1:
+      interfaces:
+        - eth1
+        - eth3
+      addresses: [__PUBLIC_IP_ADDRESS__/__PUBLIC_IP_MASK__]
+      gateway4: __PUBLIC_NEXT_HOP__
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      parameters:
+        mode: 802.3ad
+        lacp-rate: fast
+        mii-monitor-interval: 100
+        transmit-hash-policy: layer3+4
+        all-slaves-active: true
+        up-delay: 0
+        down-delay: 0
+  bridges:
+    br0:
+      addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__]
+      interfaces: [bond0]
+      nameservers:
+        addresses:
+          - __DNS_1__
+          - __DNS_2__
+      routes:
+        - to: 10.0.0.0/8
+          via: __PRIVATE_NEXT_HOP__
+        - to: 161.26.0.0/16
+          via: __PRIVATE_NEXT_HOP__
+        - to: 166.8.0.0/14
+          via: __PRIVATE_NEXT_HOP__
+    eth0vf0:
+      interfaces: [vf1]
+    eth0vf1:
+      interfaces: [vf2]
+    eth1vf0:
+      interfaces: [vf3]
+    eth1vf1:
+      interfaces: [vf4]
+    eth2vf0:
+      interfaces: [vf5]
+    eth2vf1:
+      interfaces: [vf6]
+    eth3vf0:
+      interfaces: [vf7]
+    eth3vf1:
+      interfaces: [vf8]

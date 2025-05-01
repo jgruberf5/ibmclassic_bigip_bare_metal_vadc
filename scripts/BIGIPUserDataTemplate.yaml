@@ -1,0 +1,55 @@
+#cloud-config
+chpasswd:
+  list: |
+    root:__TMOS_ADMIN_PASSWORD__
+    admin:__TMOS_ADMIN_PASSWORD__
+  expire: False
+ssh_authorized_keys:
+  - ssh-rsa [ __BIGIP_SSH_AUTH_KEY__ ]
+tmos_static_mgmt:
+  enabled: true
+  ip: __BIGIP_MANAGEMENT_IP__
+  netmask: __BIGIP_MANAGEMENT_NETMASK__
+  gw: __BIGIP_MANAGEMENT_NEXT_HOP__
+  mtu: __BIGIP_MANAGMENT_MTU__
+tmos_declared:
+  enabled: true
+  do_declaration:
+    schemaVersion: 1.0.0
+    class: Device
+    async: true
+    label: Cloudinit Onboarding
+    Common:
+      class: Tenant
+      bigipSystem:
+        class: System
+        hostname: __BIGIP_HOSTNAME__
+        autoPhonehome": false
+      provisioningLevels:
+        class: Provision
+        ltm: nominal
+      dnsServers:
+        class: DNS
+        nameServers:
+          - __DNS_1__
+          - __DNS_2__
+      slPrivate:
+        class: Trunk
+        interfaces:
+          - name: 1.1
+          - name: 1.2
+      slPublic:
+        class: Trunk
+        interfaces:
+          - name: 1.3
+          - name: 1.4
+      customerPrivate:
+        class: Trunk
+        interfaces:
+          - name: 1.5
+          - name: 1.6
+      customerPublic:
+        class: Trunk
+        interfaces:
+          - name: 1.7
+          - name: 1.8
