@@ -1,0 +1,591 @@
+#cloud-config
+package_update: true
+package_upgrade: true
+packages:
+  - bridge-utils
+  - cpu-checker
+  - libvirt-clients
+  - libvirt-daemon
+  - libvirt-daemon-system
+  - qemu
+  - qemu-kvm
+  - genisoimage
+  - ipcalc
+bootcmd:
+  - [ cloud-init-per, once, mkdir, -m, 0755, -p, '/opt/F5Networks/onboarding' ]
+write_files:
+  - path: /opt/F5Networks/onboarding/env
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      
+      # Read IP from bond0 (private) and move to bridge with BIG-IP management port
+      export PRIVATE_INTERFACE=bond0
+      export PRIVATE_IP_ADDRESS=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+      export PRIVATE_IP_MASK=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
+      export PRIVATE_NEXT_HOP=$(ip route show 10.0.0.0/8 | awk '{print $3}')
+      
+      export PUBLIC_INTERFACE=bond1
+      export PUBLIC_IP_ADDRESS=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+      export PUBLIC_IP_MASK=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
+      export PUBLIC_NEXT_HOP=$(ip route show default | awk '{print $3}')
+      
+      export DNS_1=$(cat /etc/resolv.conf | grep -m 1 nameserver | awk '{ print $2 }')
+      export DNS_2=$(cat /etc/resolv.conf | grep -m 2 nameserver | tail -n1 | awk '{ print $2 }')
+      
+      export SSH_AUTH_KEY=$(cat /root/.ssh/authorized_keys | grep -Ev "^#|^$")
+      
+      export BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
+      export BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
+      
+      export BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
+      export BIGIP_INSTANCE_ID=bigipinstance1
+      export BIGIP_HOSTNAME=bigip1
+      export BIGIP_VM_NAME=BIG-IP-17-5
+      export BIGIP_VM_MEMORY=4194304
+      export BIGIP_VM_VCPUS=2
+      export BIGIP_SSH_AUTH_KEY=$SSH_AUTH_KEY
+      export BIGIP_MANAGEMENT_IP=10.120.92.159/26
+      export BIGIP_MANAGEMENT_IP_ADDRESS=$(ipcalc $BIGIP_MANAGEMENT_IP | grep Address | awk '{ print $2 }')
+      export BIGIP_MANAGEMENT_NETMASK=$(ipcalc $BIGIP_MANAGEMENT_IP | grep Netmask | awk '{ print $2 }')
+      export BIGIP_MANAGEMENT_NEXT_HOP=$PRIVATE_NEXT_HOP
+      export BIGIP_MANAGMENT_MTU=1460
+      
+      export TMOS_ADMIN_PASSWORD='F5Networks!'
+      
+  - path: /opt/F5Networks/onboarding/onboarding.sh
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      
+      script_dir=$(dirname "${BASH_SOURCE[0]}")
+      
+      # Source the .env file
+      if [ -f "$script_dir/env" ]; then
+        source "$script_dir/env"
+      else
+        echo "Error: env file not found in $script_dir"
+        exit 1
+      fi
+      
+      function create_netplan {
+          NETPLAN_TEMPLATE="$script_dir/netplan_template.yaml"
+          NETPLAN="$script_dir/netplan.yaml"
+          cp $NETPLAN_TEMPLATE $NETPLAN
+          sed -i "s/__DNS_1__/$DNS_1/g" $NETPLAN
+          sed -i "s/__DNS_2__/$DNS_2/g" $NETPLAN
+          sed -i "s/__PUBLIC_IP_ADDRESS__/$PUBLIC_IP_ADDRESS/g" $NETPLAN
+          sed -i "s/__PUBLIC_IP_MASK__/$PUBLIC_IP_MASK/g" $NETPLAN
+          sed -i "s/__PUBLIC_NEXT_HOP__/$PUBLIC_NEXT_HOP/g" $NETPLAN
+          sed -i "s/__PRIVATE_IP_ADDRESS__/$PRIVATE_IP_ADDRESS/g" $NETPLAN
+          sed -i "s/__PRIVATE_IP_MASK__/$PRIVATE_IP_MASK/g" $NETPLAN
+          sed -i "s/__PRIVATE_NEXT_HOP__/$PRIVATE_NEXT_HOP/g" $NETPLAN
+          cp $NETPLAN /etc/netplan/01-netcfg.yaml
+          netplan apply
+      }
+      
+      function create_bigip_userdata {
+          BIGIP_CLOUDINIT_USERDATA_TEMPLATE="$script_dir/BIGIPUserDataTemplate.yaml"
+          BIGIP_CLOUD_USERDATA="$script_dir/BIGIPUserData.yaml"
+          cp $BIGIP_CLOUDINIT_USERDATA_TEMPLATE $BIGIP_CLOUD_USERDATA
+          sed -i "s/__TMOS_ADMIN_PASSWORD__/$TMOS_ADMIN_PASSWORD/g" $BIGIP_CLOUD_USERDATA
+          set -i 's|__BIGIP_SSH_AUTH_KEY__|'${BIGIP_SSH_AUTH_KEY}'|g' $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_HOSTNAME__/$BIGIP_HOSTNAME/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__DNS_1__/$DNS_1/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__DNS_2__/$DNS_2/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_MANAGEMENT_IP__/$BIGIP_MANAGEMENT_IP_ADDRESS/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_MANAGEMENT_NETMASK__/$BIGIP_MANAGEMENT_NETMASK/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_MANAGEMENT_NEXT_HOP__/$BIGIP_MANAGEMENT_NEXT_HOP/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_MANAGEMENT_MTU__/$BIGIP_MANAGEMENT_MTU/g" $BIGIP_CLOUD_USERDATA
+          rm -rf "$script_dir/cidataiso"
+          mkdir -p "$script_dir/cidataiso"
+          echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
+          echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
+          mv $BIGIP_CLOUD_USERDATA "#script_dir/cidataiso/user-data"
+          pushd $script_dir/cidataiso
+          mkisofs -V cidata -lJR -o output.iso meta-data user-data
+          popd
+          cp $script_dir/cidataiso/output.iso $BIGIP_CLOUDINIT_ISO
+      }
+      
+      function create_bigip_domain_xml {
+          BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
+          BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
+          BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+          cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
+          sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
+          sed -i "s/__BIGIP_VM_MEMORY__/$BIGIP_VM_MEMORY/g" $BIGIP_DOMAIN
+          sed -i "s/__BIGIP_VM_VCPUS__/$BIGIP_VM_VCPUS/g" $BIGIP_DOMAIN
+          sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
+          sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
+          virsh define $BIGIP_DOMAIN
+      }
+      
+      function manual_network_setup {
+          ip addr del $PRIVATE_IP/32 dev $PRIVATE_INTERFACE
+          # Create management bridge to private network
+          PRIVATE_BRIDGE=br0
+          brctl addbr $PRIVATE_BRIDGE
+          ip set link br0 up
+          ip addr add $PRIVATE_IP_ADDRESS/$PRIVATE_IP_MASK dev $PRIVATE_BRIDGE
+          brctl addif $PRIVATE_BRIDGE $PRIVATE_INTERFACE
+          ip route add 10.0.0.0/8 via $PRIVATE_NEXT_HOP
+      
+          ## Add SR-IOV vfs for BIG-IP data plane
+          echo 2 > /sys/class/net/eth0/device/sriov_numvfs
+          echo 2 > /sys/class/net/eth1/device/sriov_numvfs
+          echo 2 > /sys/class/net/eth2/device/sriov_numvfs
+          echo 2 > /sys/class/net/eth3/device/sriov_numvfs
+      
+          # BIG-IP 1.1 SL_PRIVATE_BOND0 - ETH0 VF0
+          brctl addbr eth0vf0
+          brctl addif eth0vf0 ens1f0v0
+          ip link set up ens1f0v0
+      
+          # BIG-IP 1.2 SL_PRIVATE_BOND1  - ETH2 VF0
+          brctl addbr eth2vf0
+          brctl addif eth2vf0 ens1f2v0
+          ip link set up ens1f2v0
+      
+          # BIG-IP 1.3 SL_PUBLIC_BOND0 -  ETH1 VF0
+          brctl addbr eth1vf0
+          brctl addif eth1vf0 ens1f1v0
+          ip link set up ens1f1v0
+      
+          # BIG-IP 1.4 SL_PUBLIC_BOND1 -  ETH3 VF0
+          brctl addbr eth3vf0
+          brctl addif eth3vf0 ens1f3v0
+          ip link set up ens1f3v0
+      
+          # BIG-IP 1.5 CUST_PRIVATE_BOND0 - ETH0 VF1
+          brctl addbr eth0vf1
+          brctl addif eth0vf1 ens1f0v1
+          ip link set up ens1f0v1
+      
+          # BIG-IP 1.6 CUST_PRIVATE_BOND1 - ETH2 VF1
+          brctl addbr eth2vf1
+          brctl addif eth2vf1 ens1f2v1
+          ip link set up ens1f2v1
+      
+          # BIG-IP 1.7 CUST_PRIVATE_BOND0 - ETH1 VF1
+          brctl addbr eth1vf1onboarding
+          brctl addif eth1vf1 ens1f1v1
+          ip link set up ens1f1v1
+      
+          # BIG-IP 1.8 CUST_PRIVATE_BOND1 - ETH3 VF1
+          brctl addbr eth3vf1
+          brctl addif eth3vf1 ens1f3v1
+          ip link set up ens1f3v1
+      }
+      
+      function download_bigip_image {
+          mkdir -p "$script_dir/BIGIPImages"
+          wget  $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+      }
+      
+      download_bigip_image
+      create_netplan
+      create_bigip_userdata
+      create_bigip_domain_xml
+      
+      virsh start $BIGIP_VM_NAME
+  - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
+    permissions: 0644
+    content: |
+      <domain type="kvm">
+          <name>__BIGIP_VM_NAME__</name>
+          <metadata>
+          <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+              <libosinfo:os id="http://libosinfo.org/linux/2022"/>
+          </libosinfo:libosinfo>
+          </metadata>
+          <memory>__BIGIP_VM_MEMORY__</memory>
+          <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
+          <vcpu>__BIGIP_VM_VCPUS__</vcpu>
+          <os>
+          <type arch="x86_64" machine="q35">hvm</type>
+          <boot dev="hd"/>
+          </os>
+          <features>
+          <acpi/>
+          <apic/>
+          <vmport state="off"/>
+          </features>
+          <cpu mode="host-model"/>
+          <clock offset="utc">
+          <timer name="rtc" tickpolicy="catchup"/>
+          <timer name="pit" tickpolicy="delay"/>
+          <timer name="hpet" present="no"/>tmos_static_mgmt:
+          </clock>
+          <pm>
+          <suspend-to-mem enabled="no"/>
+          <suspend-to-disk enabled="no"/>
+          </pm>
+          <devices>
+          <emulator>/usr/bin/qemu-system-x86_64</emulator>
+          <disk type="file" device="disk">
+              <driver name="qemu" type="qcow2"/>
+              <source file="__BIGIP_IMAGE_FILE__"/>
+              <target dev="vda" bus="virtio"/>
+          </disk>
+          <disk type="file" device="cdrom">
+              <driver name="qemu" type="raw"/>
+              <source file="__BIGIP_CLOUDINIT_ISO__"/>
+              <target dev="sda" bus="sata"/>
+              <readonly/>
+          </disk>
+          <controller type="usb" model="qemu-xhci" ports="15"/>
+          <controller type="pci" model="pcie-root"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <interface type="bridge">
+              <source bridge="br0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth0vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth2vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth1vf0"/>
+              <model type="virtio"/>
+          </interface><domain type="kvm">
+          <name>__BIGIP_VM_NAME__</name>
+          <metadata>
+          <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+              <libosinfo:os id="http://libosinfo.org/linux/2022"/>
+          </libosinfo:libosinfo>
+          </metadata>
+          <memory>__BIGIP_VM_MEMORY__</memory>
+          <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
+          <vcpu>__BIGIP_VM_VCPUS__</vcpu>
+          <os>
+          <type arch="x86_64" machine="q35">hvm</type>
+          <boot dev="hd"/>
+          </os>
+          <features>
+          <acpi/>
+          <apic/>
+          <vmport state="off"/>
+          </features>
+          <cpu mode="host-model"/>
+          <clock offset="utc">
+          <timer name="rtc" tickpolicy="catchup"/>
+          <timer name="pit" tickpolicy="delay"/>
+          <timer name="hpet" present="no"/>tmos_static_mgmt:
+          </clock>
+          <pm>
+          <suspend-to-mem enabled="no"/>
+          <suspend-to-disk enabled="no"/>
+          </pm>
+          <devices>
+          <emulator>/usr/bin/qemu-system-x86_64</emulator>
+          <disk type="file" device="disk">
+              <driver name="qemu" type="qcow2"/>
+              <source file="__BIGIP_IMAGE_FILE__"/>
+              <target dev="vda" bus="virtio"/>
+          </disk>
+          <disk type="file" device="cdrom">
+              <driver name="qemu" type="raw"/>
+              <source file="__BIGIP_CLOUDINIT_ISO__"/>
+              <target dev="sda" bus="sata"/>
+              <readonly/>
+          </disk>
+          <controller type="usb" model="qemu-xhci" ports="15"/>
+          <controller type="pci" model="pcie-root"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <controller type="pci" model="pcie-root-port"/>
+          <interface type="bridge">
+              <source bridge="br0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth0vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth2vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth1vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth3vf0"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth0vf1"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth2vf1"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth1vf1"/>
+              <model type="virtio"/>
+          </interface>
+          <interface type="bridge">
+              <source bridge="eth3vf1"/>
+              <model type="virtio"/>
+          </interface>
+          <console type="pty"/>
+          <channel type="unix">
+              <source mode="bind"/>
+              <target type="virtio" name="org.qemu.guest_agent.0"/>
+          </channel>
+          <channel type="spicevmc">
+              <target type="virtio" name="com.redhat.spice.0"/>
+          </channel>
+          <input type="tablet" bus="usb"/>
+          <graphics type="spice" port="-1" tlsPort="-1" autoport="yes"/>
+          <sound model="ich9"/>
+          <video>
+              <model type="virtio"/>
+          </video>
+          <redirdev bus="usb" type="spicevmc"/>
+          <redirdev bus="usb" type="spicevmc"/>
+          <memballoon model="virtio"/>
+          <rng model="virtio">
+              <backend model="random">/dev/urandom</backend>
+          </rng>
+          </devices>
+      </domain>
+  - path: /opt/F5Networks/onboarding/netplan_template.yaml
+    permissions: 0644
+    content: |
+      network:
+        version: 2
+        renderer: networkd
+        ethernets:
+          eth0:
+            dhcp4: no
+            dhcp6: no
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            virtual-function-count: 2
+          eth1:
+            dhcp4: no
+            dhcp6: no
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            virtual-function-count: 2
+          eth2:
+            dhcp4: no
+            dhcp6: no
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            virtual-function-count: 2
+          eth3:
+            dhcp4: no
+            dhcp6: no
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            virtual-function-count: 2
+          vf1:
+            match:
+              name: ens1f0v0
+            link: eth0
+            dhcp4: no
+            dhcp6: no
+          vf2:
+            match:
+              name: ens1f0v1
+            link: eth0
+            dhcp4: no
+            dhcp6: no
+          vf3:
+            match:
+              name: ens1f1v0
+            link: eth1
+            dhcp4: no
+            dhcp6: no
+          vf4:
+            match:
+              name: ens1f1v1
+            link: eth1
+            dhcp4: no
+            dhcp6: no
+          vf5:
+            match:
+              name: ens1f2v0
+            link: eth2
+            dhcp4: no
+            dhcp6: no
+          vf6:
+            match:
+              name: ens1f2v1
+            link: eth2
+            dhcp4: no
+            dhcpssh_authorized_keys:6: no
+          vf7:
+            match:
+              name: ens1f3v0
+            link: eth3
+            dhcp4: no
+            dhcp6: no
+          vf8:
+            match:
+              name: ens1f3v1
+            link: eth3
+            dhcp4: no
+            dhcp6: no
+        bonds:
+          bond0:
+            interfaces:
+              - eth0
+              - eth2
+            parameters:
+              mode: 802.3ad
+              lacp-rate: fast
+              mii-monitor-interval: 100
+              transmit-hash-policy: layer3+4
+              all-slaves-active: true
+              up-delay: 0
+              down-delay: 0
+          bond1:
+            interfaces:
+              - eth1
+              - eth3
+            addresses: [__PUBLIC_IP_ADDRESS__/__PUBLIC_IP_MASK__]
+            gateway4: __PUBLIC_NEXT_HOP__
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            parameters:
+              mode: 802.3ad
+              lacp-rate: fast
+              mii-monitor-interval: 100
+              transmit-hash-policy: layer3+4
+              all-slaves-active: true
+              up-delay: 0
+              down-delay: 0
+        bridges:
+          br0:
+            addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__]
+            interfaces: [bond0]
+            nameservers:
+              addresses:
+                - __DNS_1__
+                - __DNS_2__
+            routes:
+              - to: 10.0.0.0/8
+                via: __PRIVATE_NEXT_HOP__
+              - to: 161.26.0.0/16
+                via: __PRIVATE_NEXT_HOP__
+              - to: 166.8.0.0/14
+                via: __PRIVATE_NEXT_HOP__
+          eth0vf0:
+            interfaces: [vf1]
+          eth0vf1:
+            interfaces: [vf2]
+          eth1vf0:
+            interfaces: [vf3]
+          eth1vf1:
+            interfaces: [vf4]
+          eth2vf0:
+            interfaces: [vf5]
+          eth2vf1:
+            interfaces: [vf6]
+          eth3vf0:
+            interfaces: [vf7]
+          eth3vf1:
+            interfaces: [vf8]
+  - path: /opt/F5Networks/onboarding/BIGIPUserDataTemplate.yaml
+    permissions: 0644
+    content: |
+      #cloud-config
+      chpasswd:
+        list: |
+          root:__TMOS_ADMIN_PASSWORD__
+          admin:__TMOS_ADMIN_PASSWORD__
+        expire: False
+      ssh_authorized_keys:
+        - ssh-rsa [ __BIGIP_SSH_AUTH_KEY__ ]
+      tmos_static_mgmt:
+        enabled: true
+        ip: __BIGIP_MANAGEMENT_IP__
+        netmask: __BIGIP_MANAGEMENT_NETMASK__
+        gw: __BIGIP_MANAGEMENT_NEXT_HOP__
+        mtu: __BIGIP_MANAGMENT_MTU__
+      tmos_declared:
+        enabled: true
+        do_declaration:
+          schemaVersion: 1.0.0
+          class: Device
+          async: true
+          label: Cloudinit Onboarding
+          Common:
+            class: Tenant
+            bigipSystem:
+              class: System
+              hostname: __BIGIP_HOSTNAME__
+              autoPhonehome": false
+            provisioningLevels:
+              class: Provision
+              ltm: nominal
+            dnsServers:
+              class: DNS
+              nameServers:
+                - __DNS_1__
+                - __DNS_2__
+            slPrivate:
+              class: Trunk
+              interfaces:
+                - name: 1.1
+                - name: 1.2
+            slPublic:
+              class: Trunk
+              interfaces:
+                - name: 1.3
+                - name: 1.4
+            customerPrivate:
+              class: Trunk
+              interfaces:
+                - name: 1.5
+                - name: 1.6
+            customerPublic:
+              class: Trunk
+              interfaces:
+                - name: 1.7
+                - name: 1.8
+runcmd: [nohup sh -c '/opt/F5Networks/onboarding/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]

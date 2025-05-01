@@ -2,9 +2,11 @@
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 
-mkdir -p $script_dir/../cloudinit
+pushd $script_dir > /dev/null
 
-cloudinit_file=$script_dir/../cloudinit/user-data.yaml
+mkdir -p ../build
+
+cloudinit_file=../build/user-data.yaml
 
 destination_dir="/opt/F5Networks/onboarding"
 
@@ -30,13 +32,13 @@ echo "bootcmd:" >> $cloudinit_file
 echo "  - [ cloud-init-per, once, mkdir, -m, 0755, -p, '$destination_dir' ]" >> $cloudinit_file
 
 echo "write_files:" >> $cloudinit_file
-echo "  - path: $destination_dir/.env" >> $cloudinit_file
+echo "  - path: $destination_dir/env" >> $cloudinit_file
 echo "    permissions: 0755" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "$script_dir/../scripts/.env"
+done < "../scripts/env"
 
 # onboarding script
 echo "  - path: $destination_dir/onboarding.sh" >> $cloudinit_file
@@ -45,7 +47,7 @@ echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "$script_dir/../scripts/onboarding.sh"
+done < "../scripts/onboarding.sh"
 
 # BIGIPDomainTemplate
 echo "  - path: $destination_dir/BIGIPDomainTemplate.xml" >> $cloudinit_file
@@ -54,7 +56,7 @@ echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "$script_dir/../scripts/BIGIPDomainTemplate.xml"
+done < "../scripts/BIGIPDomainTemplate.xml"
 
 # netplan
 echo "  - path: $destination_dir/netplan_template.yaml" >> $cloudinit_file
@@ -63,7 +65,7 @@ echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "$script_dir/../scripts/netplan_template.yaml"
+done < "../scripts/netplan_template.yaml"
 
 # BIGIP user-data
 echo "  - path: $destination_dir/BIGIPUserDataTemplate.yaml" >> $cloudinit_file
@@ -72,7 +74,9 @@ echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "$script_dir/../scripts/BIGIPUserDataTemplate.yaml"
+done < "../scripts/BIGIPUserDataTemplate.yaml"
 
 # runcmd
 echo "runcmd: [nohup sh -c '$destination_dir/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]" >> $cloudinit_file
+
+popd > /dev/null

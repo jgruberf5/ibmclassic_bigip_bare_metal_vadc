@@ -3,10 +3,10 @@
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 
 # Source the .env file
-if [ -f "$script_dir/.env" ]; then
-  source "$script_dir/.env"
+if [ -f "$script_dir/env" ]; then
+  source "$script_dir/env"
 else
-  echo "Error: .env file not found in $script_dir"
+  echo "Error: env file not found in $script_dir"
   exit 1
 fi
 

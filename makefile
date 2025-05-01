@@ -1,3 +1,4 @@
-build:
-  cd ./utils && sh -c make_cloudinit_userdata.sh
-  cd ./utils && sh -c make_provisioning_script.sh
+all:
+	sh -c ./utils/make_cloudinit_userdata.sh
+	sh -c ./utils/make_provisioning_script.sh
+
