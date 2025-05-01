@@ -3,7 +3,7 @@
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 
 full_script_path=$(realpath "$0")
-full_script_dir=$(dirname "$SCRIPT")
+full_script_dir=$(dirname "$full_script_path")
 
 # Source the installenv file
 if [ -f "$script_dir/installenv" ]; then
@@ -38,8 +38,7 @@ function create_bigip_userdata {
     sed -i "s/__BIGIP_HOSTNAME__/$BIGIP_HOSTNAME/g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__DNS_1__/$DNS_1/g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__DNS_2__/$DNS_2/g" $BIGIP_CLOUD_USERDATA
-    sed -i "s/__BIGIP_MANAGEMENT_IP__/$BIGIP_MANAGEMENT_IP_ADDRESS/g" $BIGIP_CLOUD_USERDATA
-    sed -i "s/__BIGIP_MANAGEMENT_NETMASK__/$BIGIP_MANAGEMENT_NETMASK/g" $BIGIP_CLOUD_USERDATA
+    sed -i "s|__BIGIP_MANAGEMENT_IP__|$BIGIP_MANAGEMENT_IP|g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__BIGIP_MANAGEMENT_NEXT_HOP__/$BIGIP_MANAGEMENT_NEXT_HOP/g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__BIGIP_MANAGEMENT_MTU__/$BIGIP_MANAGEMENT_MTU/g" $BIGIP_CLOUD_USERDATA
     rm -rf "$script_dir/cidataiso"

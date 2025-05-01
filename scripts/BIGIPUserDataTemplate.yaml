@@ -9,7 +9,6 @@ ssh_authorized_keys:
 tmos_static_mgmt:
   enabled: true
   ip: __BIGIP_MANAGEMENT_IP__
-  netmask: __BIGIP_MANAGEMENT_NETMASK__
   gw: __BIGIP_MANAGEMENT_NEXT_HOP__
   mtu: __BIGIP_MANAGEMENT_MTU__
 tmos_declared:
