@@ -8,11 +8,13 @@ ssh_authorized_keys:
   - ssh-rsa [ __BIGIP_SSH_AUTH_KEY__ ]
 tmos_static_mgmt:
   enabled: true
+  icontrollx_trusted_sources: false
   ip: __BIGIP_MANAGEMENT_IP__
   gw: __BIGIP_MANAGEMENT_NEXT_HOP__
   mtu: __BIGIP_MANAGEMENT_MTU__
 tmos_declared:
   enabled: true
+  icontrollx_trusted_sources: false
   do_declaration:
     schemaVersion: 1.0.0
     class: Device
