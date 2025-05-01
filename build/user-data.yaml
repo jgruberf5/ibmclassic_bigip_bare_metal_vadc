@@ -60,6 +60,9 @@ write_files:
       
       script_dir=$(dirname "${BASH_SOURCE[0]}")
       
+      full_script_path=$(realpath "$0")
+      full_script_dir=$(dirname "$SCRIPT")
+      
       # Source the installenv file
       if [ -f "$script_dir/installenv" ]; then
         source "$script_dir/installenv"
@@ -89,7 +92,7 @@ write_files:
           BIGIP_CLOUD_USERDATA="$script_dir/BIGIPUserData.yaml"
           cp $BIGIP_CLOUDINIT_USERDATA_TEMPLATE $BIGIP_CLOUD_USERDATA
           sed -i "s/__TMOS_ADMIN_PASSWORD__/$TMOS_ADMIN_PASSWORD/g" $BIGIP_CLOUD_USERDATA
-          set -i 's|__BIGIP_SSH_AUTH_KEY__|'${BIGIP_SSH_AUTH_KEY}'|g' $BIGIP_CLOUD_USERDATA
+          sed -i "s|__BIGIP_SSH_AUTH_KEY__|$BIGIP_SSH_AUTH_KEY|g" $BIGIP_CLOUD_USERDATA
           sed -i "s/__BIGIP_HOSTNAME__/$BIGIP_HOSTNAME/g" $BIGIP_CLOUD_USERDATA
           sed -i "s/__DNS_1__/$DNS_1/g" $BIGIP_CLOUD_USERDATA
           sed -i "s/__DNS_2__/$DNS_2/g" $BIGIP_CLOUD_USERDATA
@@ -101,7 +104,7 @@ write_files:
           mkdir -p "$script_dir/cidataiso"
           echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
           echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
-          mv $BIGIP_CLOUD_USERDATA "#script_dir/cidataiso/user-data"
+          mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
           pushd $script_dir/cidataiso
           mkisofs -V cidata -lJR -o output.iso meta-data user-data
           popd
@@ -111,7 +114,7 @@ write_files:
       function create_bigip_domain_xml {
           BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
           BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
-          BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+          BIGIP_IMAGE_FILE="$full_script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
           cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
           sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
           sed -i "s/__BIGIP_VM_MEMORY__/$BIGIP_VM_MEMORY/g" $BIGIP_DOMAIN
@@ -180,7 +183,7 @@ write_files:
       
       function download_bigip_image {
           mkdir -p "$script_dir/BIGIPImages"
-          wget  $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+          wget -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
       }
       
       download_bigip_image
@@ -195,190 +198,117 @@ write_files:
       <domain type="kvm">
           <name>__BIGIP_VM_NAME__</name>
           <metadata>
-          <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+            <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
               <libosinfo:os id="http://libosinfo.org/linux/2022"/>
-          </libosinfo:libosinfo>
+            </libosinfo:libosinfo>
           </metadata>
           <memory>__BIGIP_VM_MEMORY__</memory>
           <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
           <vcpu>__BIGIP_VM_VCPUS__</vcpu>
           <os>
-          <type arch="x86_64" machine="q35">hvm</type>
-          <boot dev="hd"/>
+            <type arch="x86_64" machine="q35">hvm</type>
+            <boot dev="hd"/>
           </os>
           <features>
-          <acpi/>
-          <apic/>
-          <vmport state="off"/>
+            <acpi/>
+            <apic/>
+            <vmport state="off"/>
           </features>
           <cpu mode="host-model"/>
           <clock offset="utc">
-          <timer name="rtc" tickpolicy="catchup"/>
-          <timer name="pit" tickpolicy="delay"/>
-          <timer name="hpet" present="no"/>tmos_static_mgmt:
+            <timer name="rtc" tickpolicy="catchup"/>
+            <timer name="pit" tickpolicy="delay"/>
+            <timer name="hpet" present="no"/>
           </clock>
           <pm>
-          <suspend-to-mem enabled="no"/>
-          <suspend-to-disk enabled="no"/>
+            <suspend-to-mem enabled="no"/>
+            <suspend-to-disk enabled="no"/>
           </pm>
           <devices>
-          <emulator>/usr/bin/qemu-system-x86_64</emulator>
-          <disk type="file" device="disk">
+            <emulator>/usr/bin/qemu-system-x86_64</emulator>
+            <disk type="file" device="disk">
               <driver name="qemu" type="qcow2"/>
               <source file="__BIGIP_IMAGE_FILE__"/>
               <target dev="vda" bus="virtio"/>
-          </disk>
-          <disk type="file" device="cdrom">
+            </disk>
+            <disk type="file" device="cdrom">
               <driver name="qemu" type="raw"/>
               <source file="__BIGIP_CLOUDINIT_ISO__"/>
               <target dev="sda" bus="sata"/>
               <readonly/>
-          </disk>
-          <controller type="usb" model="qemu-xhci" ports="15"/>
-          <controller type="pci" model="pcie-root"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <interface type="bridge">
+            </disk>
+            <controller type="usb" model="qemu-xhci" ports="15"/>
+            <controller type="pci" model="pcie-root"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <interface type="bridge">
               <source bridge="br0"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth0vf0"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth2vf0"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth1vf0"/>
               <model type="virtio"/>
-          </interface><domain type="kvm">
-          <name>__BIGIP_VM_NAME__</name>
-          <metadata>
-          <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
-              <libosinfo:os id="http://libosinfo.org/linux/2022"/>
-          </libosinfo:libosinfo>
-          </metadata>
-          <memory>__BIGIP_VM_MEMORY__</memory>
-          <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
-          <vcpu>__BIGIP_VM_VCPUS__</vcpu>
-          <os>
-          <type arch="x86_64" machine="q35">hvm</type>
-          <boot dev="hd"/>
-          </os>
-          <features>
-          <acpi/>
-          <apic/>
-          <vmport state="off"/>
-          </features>
-          <cpu mode="host-model"/>
-          <clock offset="utc">
-          <timer name="rtc" tickpolicy="catchup"/>
-          <timer name="pit" tickpolicy="delay"/>
-          <timer name="hpet" present="no"/>tmos_static_mgmt:
-          </clock>
-          <pm>
-          <suspend-to-mem enabled="no"/>
-          <suspend-to-disk enabled="no"/>
-          </pm>
-          <devices>
-          <emulator>/usr/bin/qemu-system-x86_64</emulator>
-          <disk type="file" device="disk">
-              <driver name="qemu" type="qcow2"/>
-              <source file="__BIGIP_IMAGE_FILE__"/>
-              <target dev="vda" bus="virtio"/>
-          </disk>
-          <disk type="file" device="cdrom">
-              <driver name="qemu" type="raw"/>
-              <source file="__BIGIP_CLOUDINIT_ISO__"/>
-              <target dev="sda" bus="sata"/>
-              <readonly/>
-          </disk>
-          <controller type="usb" model="qemu-xhci" ports="15"/>
-          <controller type="pci" model="pcie-root"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <controller type="pci" model="pcie-root-port"/>
-          <interface type="bridge">
-              <source bridge="br0"/>
-              <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
-              <source bridge="eth0vf0"/>
-              <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
-              <source bridge="eth2vf0"/>
-              <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
-              <source bridge="eth1vf0"/>
-              <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth3vf0"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth0vf1"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth2vf1"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth1vf1"/>
               <model type="virtio"/>
-          </interface>
-          <interface type="bridge">
+            </interface>
+            <interface type="bridge">
               <source bridge="eth3vf1"/>
               <model type="virtio"/>
-          </interface>
-          <console type="pty"/>
-          <channel type="unix">
+            </interface>
+            <console type="pty"/>
+            <channel type="unix">
               <source mode="bind"/>
               <target type="virtio" name="org.qemu.guest_agent.0"/>
-          </channel>
-          <channel type="spicevmc">
+            </channel>
+            <channel type="spicevmc">
               <target type="virtio" name="com.redhat.spice.0"/>
-          </channel>
-          <input type="tablet" bus="usb"/>
-          <graphics type="spice" port="-1" tlsPort="-1" autoport="yes"/>
-          <sound model="ich9"/>
-          <video>
+            </channel>
+            <input type="tablet" bus="usb"/>
+            <graphics type="spice" port="-1" tlsPort="-1" autoport="yes"/>
+            <sound model="ich9"/>
+            <video>
               <model type="virtio"/>
-          </video>
-          <redirdev bus="usb" type="spicevmc"/>
-          <redirdev bus="usb" type="spicevmc"/>
-          <memballoon model="virtio"/>
-          <rng model="virtio">
+            </video>
+            <redirdev bus="usb" type="spicevmc"/>
+            <redirdev bus="usb" type="spicevmc"/>
+            <memballoon model="virtio"/>
+            <rng model="virtio">
               <backend model="random">/dev/urandom</backend>
-          </rng>
+            </rng>
           </devices>
       </domain>
   - path: /opt/F5Networks/onboarding/netplan_template.yaml
@@ -455,7 +385,7 @@ write_files:
               name: ens1f2v1
             link: eth2
             dhcp4: no
-            dhcpssh_authorized_keys:6: no
+            dhcp6: no
           vf7:
             match:
               name: ens1f3v0
@@ -546,7 +476,7 @@ write_files:
         ip: __BIGIP_MANAGEMENT_IP__
         netmask: __BIGIP_MANAGEMENT_NETMASK__
         gw: __BIGIP_MANAGEMENT_NEXT_HOP__
-        mtu: __BIGIP_MANAGMENT_MTU__
+        mtu: __BIGIP_MANAGEMENT_MTU__
       tmos_declared:
         enabled: true
         do_declaration:

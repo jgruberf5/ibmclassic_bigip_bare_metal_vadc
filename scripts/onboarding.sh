@@ -2,6 +2,9 @@
 
 script_dir=$(dirname "${BASH_SOURCE[0]}")
 
+full_script_path=$(realpath "$0")
+full_script_dir=$(dirname "$SCRIPT")
+
 # Source the installenv file
 if [ -f "$script_dir/installenv" ]; then
   source "$script_dir/installenv"
@@ -31,7 +34,7 @@ function create_bigip_userdata {
     BIGIP_CLOUD_USERDATA="$script_dir/BIGIPUserData.yaml"
     cp $BIGIP_CLOUDINIT_USERDATA_TEMPLATE $BIGIP_CLOUD_USERDATA
     sed -i "s/__TMOS_ADMIN_PASSWORD__/$TMOS_ADMIN_PASSWORD/g" $BIGIP_CLOUD_USERDATA
-    set -i 's|__BIGIP_SSH_AUTH_KEY__|'${BIGIP_SSH_AUTH_KEY}'|g' $BIGIP_CLOUD_USERDATA
+    sed -i "s|__BIGIP_SSH_AUTH_KEY__|$BIGIP_SSH_AUTH_KEY|g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__BIGIP_HOSTNAME__/$BIGIP_HOSTNAME/g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__DNS_1__/$DNS_1/g" $BIGIP_CLOUD_USERDATA
     sed -i "s/__DNS_2__/$DNS_2/g" $BIGIP_CLOUD_USERDATA
@@ -43,7 +46,7 @@ function create_bigip_userdata {
     mkdir -p "$script_dir/cidataiso"
     echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
     echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
-    mv $BIGIP_CLOUD_USERDATA "#script_dir/cidataiso/user-data"
+    mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
     pushd $script_dir/cidataiso
     mkisofs -V cidata -lJR -o output.iso meta-data user-data
     popd
@@ -53,7 +56,7 @@ function create_bigip_userdata {
 function create_bigip_domain_xml {
     BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
     BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
-    BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+    BIGIP_IMAGE_FILE="$full_script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
     cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
     sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
     sed -i "s/__BIGIP_VM_MEMORY__/$BIGIP_VM_MEMORY/g" $BIGIP_DOMAIN
@@ -122,7 +125,7 @@ function manual_network_setup {
 
 function download_bigip_image {
     mkdir -p "$script_dir/BIGIPImages"
-    wget  $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+    wget -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
 }
 
 download_bigip_image

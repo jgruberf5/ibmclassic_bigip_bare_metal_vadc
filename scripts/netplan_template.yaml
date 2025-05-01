@@ -69,7 +69,7 @@ network:
         name: ens1f2v1
       link: eth2
       dhcp4: no
-      dhcpssh_authorized_keys:6: no
+      dhcp6: no
     vf7:
       match:
         name: ens1f3v0
