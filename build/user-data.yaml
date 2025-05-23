@@ -19,25 +19,65 @@ write_files:
     content: |
       #!/bin/bash
       
-      # Read IP from bond0 (private) and move to bridge with BIG-IP management port
-      export PRIVATE_INTERFACE=bond0
-      export PRIVATE_IP_ADDRESS=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
-      export PRIVATE_IP_MASK=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
-      export PRIVATE_NEXT_HOP=$(ip route show 10.0.0.0/8 | awk '{print $3}')
+      # Read IP from bond0 (private) and populate BIG-IP netplan YAML to move IP address to bridge with BIG-IP management port
+      #
+      # This method uses linux network settings - assumes networking is up
+      #export PRIVATE_INTERFACE=bond0
+      #export PRIVATE_IP_ADDRESS=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+      #export PRIVATE_IP_MASK=$(ip addr show $PRIVATE_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
+      #export PRIVATE_NEXT_HOP=$(ip route show 10.0.0.0/8 | awk '{print $3}')
+      #
+      # This method uses the existing Ubuntu netplan YAML for IBM Classic bare metal servers
+      # If the default netplan changes, this will need to be adjusted
+      #
+      # private ip addres = networks.bonds.bond0.address.0
+      # private ip next hop = networks.bonds.bond0.routes.0.via
+      #
+      export PRIVATE_IP_ADDRESS=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond0"]["addresses"][0])'| cut -d'/' -f1)
+      export PRIVATE_IP_MASK=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond0"]["addresses"][0])'| cut -d'/' -f2)
+      export PRIVATE_NEXT_HOP=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond0"]["routes"][0]["via"])')
       
-      export PUBLIC_INTERFACE=bond1
-      export PUBLIC_IP_ADDRESS=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
-      export PUBLIC_IP_MASK=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
-      export PUBLIC_NEXT_HOP=$(ip route show default | awk '{print $3}')
-      
-      export DNS_1=$(cat /etc/resolv.conf | grep -m 1 nameserver | awk '{ print $2 }')
-      export DNS_2=$(cat /etc/resolv.conf | grep -m 2 nameserver | tail -n1 | awk '{ print $2 }')
-      
+      # Read IP from bond1 (public) and populate BIG-IP netplan YAML
+      #
+      # This method uses linux network settings - assumes networking is up
+      #export PUBLIC_INTERFACE=bond1
+      #export PUBLIC_IP_ADDRESS=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f1)
+      #export PUBLIC_IP_MASK=$(ip addr show $PUBLIC_INTERFACE | grep "inet " | awk '{print $2}' | cut -d'/' -f2)
+      #export PUBLIC_NEXT_HOP=$(ip route show default | awk '{print $3}')
+      #
+      # This method uses the existing Ubuntu netplan YAML for IBM Classic bare metal servers
+      # If the default netplan changes, this will need to be adjusted
+      #
+      # public ip addres = networks.bonds.bond1.address.0
+      # public ip next hop = networks.bonds.bond1.gateway4
+      #
+      export PUBLIC_IP_ADDRESS=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond1"]["addresses"][0])' | cut -d'/' -f1)
+      export PUBLIC_IP_MASK=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond1"]["addresses"][0])' | cut -d'/' -f2)
+      export PUBLIC_NEXT_HOP=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond1"]["gateway4"])')
+      #
+      # Read DNS server for private DNS servers
+      #
+      # This method uses what is statically set in the linux resolver config - assumes netplan has created the config
+      #export DNS_1=$(cat /etc/resolv.conf | grep -m 1 nameserver | awk '{ print $2 }')
+      #export DNS_2=$(cat /etc/resolv.conf | grep -m 2 nameserver | tail -n1 | awk '{ print $2 }')
+      #
+      # This method uses the existing Ubuntu netplan YAML for IBM Classic bare metal servers
+      # If the default netplan changes, this will need to be adjusted
+      #
+      export DNS_1=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond0"]["nameservers"]["addresses"][0])')
+      export DNS_2=$(cat /etc/netplan/01-netcfg.yaml | python3 -c 'import json, sys, yaml ; y = yaml.safe_load(sys.stdin.read()) ; print(y["network"]["bonds"]["bond0"]["nameservers"]["addresses"][1])')
+      #
+      # Read SSH key added to bare metal server and add to BIG-IP virtual edition
+      #
       export SSH_AUTH_KEY=$(cat /root/.ssh/authorized_keys | grep -Ev "^#|^$")
-      
+      #
+      # Download the BIG-IP virtual edition disk image from VPC image object store
+      #
       export BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
       export BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
-      
+      #
+      #
+      #
       export BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
       export BIGIP_INSTANCE_ID=bigipinstance1
       export BIGIP_HOSTNAME=bigip1
@@ -45,12 +85,23 @@ write_files:
       export BIGIP_VM_MEMORY=4194304
       export BIGIP_VM_VCPUS=2
       export BIGIP_SSH_AUTH_KEY=$SSH_AUTH_KEY
-      export BIGIP_MANAGEMENT_IP=10.120.92.159/26
-      export BIGIP_MANAGEMENT_NEXT_HOP=$PRIVATE_NEXT_HOP
+      #
+      # You can set this manually if you know the additional private network subnet address allocated
+      # Manually set management addresses will ARP respond on the management bridge (L2)
+      #
+      # export BIGIP_MANAGEMENT_IP=10.120.92.159/26
+      # export BIGIP_MANAGEMENT_NEXT_HOP=$PRIVATE_NEXT_HOP
+      #
+      # You can use an IPv4 link local loopack baddress which can be the same for all instances 
+      # This will depend on the linux host routing to the BIG-IP virtual edition management
+      # through the management bridge (L3)
+      #
+      export BIGIP_MANAGEMENT_IP=169.254.254.2/31
+      export HOST_LINK_LOCAL_MANAGEMENT_IP=169.254.254.1
+      export BIGIP_MANAGEMENT_NEXT_HOP=$HOST_LINK_LOCAL_MANAGEMENT_IP
+      
       export BIGIP_MANAGEMENT_MTU=1460
-      
       export TMOS_ADMIN_PASSWORD='F5Networks!'
-      
   - path: /opt/F5Networks/onboarding/onboarding.sh
     permissions: 0755
     content: |
@@ -79,17 +130,18 @@ write_files:
           NETPLAN_TEMPLATE="$script_dir/netplan_template.yaml"
           NETPLAN="$script_dir/netplan.yaml"
           cp $NETPLAN_TEMPLATE $NETPLAN
-          sed -i "s/__DNS_1__/$DNS_1/g" $NETPLAN
-          sed -i "s/__DNS_2__/$DNS_2/g" $NETPLAN
-          sed -i "s/__PUBLIC_IP_ADDRESS__/$PUBLIC_IP_ADDRESS/g" $NETPLAN
-          sed -i "s/__PUBLIC_IP_MASK__/$PUBLIC_IP_MASK/g" $NETPLAN
-          sed -i "s/__PUBLIC_NEXT_HOP__/$PUBLIC_NEXT_HOP/g" $NETPLAN
-          sed -i "s/__PRIVATE_IP_ADDRESS__/$PRIVATE_IP_ADDRESS/g" $NETPLAN
-          sed -i "s/__PRIVATE_IP_MASK__/$PRIVATE_IP_MASK/g" $NETPLAN
-          sed -i "s/__PRIVATE_NEXT_HOP__/$PRIVATE_NEXT_HOP/g" $NETPLAN
+          sed -i "s|__DNS_1__|$DNS_1|g" $NETPLAN
+          sed -i "s|__DNS_2__|$DNS_2|g" $NETPLAN
+          sed -i "s|__PUBLIC_IP_ADDRESS__|$PUBLIC_IP_ADDRESS|g" $NETPLAN
+          sed -i "s|__PUBLIC_IP_MASK__|$PUBLIC_IP_MASK|g" $NETPLAN
+          sed -i "s|__PUBLIC_NEXT_HOP__|$PUBLIC_NEXT_HOP|g" $NETPLAN
+          sed -i "s|__PRIVATE_IP_ADDRESS__|$PRIVATE_IP_ADDRESS|g" $NETPLAN
+          sed -i "s|__PRIVATE_IP_MASK__|$PRIVATE_IP_MASK|g" $NETPLAN
+          sed -i "s|__PRIVATE_NEXT_HOP__|$PRIVATE_NEXT_HOP|g" $NETPLAN
+          sed -i "s|__HOST_LINK_LOCAL_MANAGEMENT_IP__|$HOST_LINK_LOCAL_MANAGEMENT_IP|g" $NETPLAN
           cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
-          #cp $NETPLAN /etc/netplan/01-netcfg.yaml
-          #netplan apply
+          cp $NETPLAN /etc/netplan/01-netcfg.yaml
+          netplan apply
       }
       
       function create_bigip_userdata {
@@ -97,14 +149,14 @@ write_files:
           BIGIP_CLOUDINIT_USERDATA_TEMPLATE="$script_dir/BIGIPUserDataTemplate.yaml"
           BIGIP_CLOUD_USERDATA="$script_dir/BIGIPUserData.yaml"
           cp $BIGIP_CLOUDINIT_USERDATA_TEMPLATE $BIGIP_CLOUD_USERDATA
-          sed -i "s/__TMOS_ADMIN_PASSWORD__/$TMOS_ADMIN_PASSWORD/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__TMOS_ADMIN_PASSWORD__|$TMOS_ADMIN_PASSWORD|g" $BIGIP_CLOUD_USERDATA
           sed -i "s|__BIGIP_SSH_AUTH_KEY__|$BIGIP_SSH_AUTH_KEY|g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__BIGIP_HOSTNAME__/$BIGIP_HOSTNAME/g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__DNS_1__/$DNS_1/g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__DNS_2__/$DNS_2/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__BIGIP_HOSTNAME__|$BIGIP_HOSTNAME|g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__DNS_1__|$DNS_1|g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__DNS_2__|$DNS_2|g" $BIGIP_CLOUD_USERDATA
           sed -i "s|__BIGIP_MANAGEMENT_IP__|$BIGIP_MANAGEMENT_IP|g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__BIGIP_MANAGEMENT_NEXT_HOP__/$BIGIP_MANAGEMENT_NEXT_HOP/g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__BIGIP_MANAGEMENT_MTU__/$BIGIP_MANAGEMENT_MTU/g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__BIGIP_MANAGEMENT_NEXT_HOP__|$BIGIP_MANAGEMENT_NEXT_HOP|g" $BIGIP_CLOUD_USERDATA
+          sed -i "s/__BIGIP_MANAGEMENT_MTU__|$BIGIP_MANAGEMENT_MTU|g" $BIGIP_CLOUD_USERDATA
           rm -rf "$script_dir/cidataiso"
           mkdir -p "$script_dir/cidataiso"
           echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
@@ -123,70 +175,12 @@ write_files:
           BIGIP_IMAGE_FILE="$full_script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
           cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
           sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
-          sed -i "s/__BIGIP_VM_MEMORY__/$BIGIP_VM_MEMORY/g" $BIGIP_DOMAIN
-          sed -i "s/__BIGIP_VM_VCPUS__/$BIGIP_VM_VCPUS/g" $BIGIP_DOMAIN
+          sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN
+          sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN
           sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
           sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
           virsh define $BIGIP_DOMAIN
       }
-      
-      function manual_network_setup {
-          ip addr del $PRIVATE_IP/32 dev $PRIVATE_INTERFACE
-          # Create management bridge to private network
-          PRIVATE_BRIDGE=br0
-          brctl addbr $PRIVATE_BRIDGE
-          ip set link br0 up
-          ip addr add $PRIVATE_IP_ADDRESS/$PRIVATE_IP_MASK dev $PRIVATE_BRIDGE
-          brctl addif $PRIVATE_BRIDGE $PRIVATE_INTERFACE
-          ip route add 10.0.0.0/8 via $PRIVATE_NEXT_HOP
-      
-          ## Add SR-IOV vfs for BIG-IP data plane
-          echo 2 > /sys/class/net/eth0/device/sriov_numvfs
-          echo 2 > /sys/class/net/eth1/device/sriov_numvfs
-          echo 2 > /sys/class/net/eth2/device/sriov_numvfs
-          echo 2 > /sys/class/net/eth3/device/sriov_numvfs
-      
-          # BIG-IP 1.1 SL_PRIVATE_BOND0 - ETH0 VF0
-          brctl addbr eth0vf0
-          brctl addif eth0vf0 ens1f0v0
-          ip link set up ens1f0v0
-      
-          # BIG-IP 1.2 SL_PRIVATE_BOND1  - ETH2 VF0
-          brctl addbr eth2vf0
-          brctl addif eth2vf0 ens1f2v0
-          ip link set up ens1f2v0
-      
-          # BIG-IP 1.3 SL_PUBLIC_BOND0 -  ETH1 VF0
-          brctl addbr eth1vf0
-          brctl addif eth1vf0 ens1f1v0
-          ip link set up ens1f1v0
-      
-          # BIG-IP 1.4 SL_PUBLIC_BOND1 -  ETH3 VF0
-          brctl addbr eth3vf0
-          brctl addif eth3vf0 ens1f3v0
-          ip link set up ens1f3v0
-      
-          # BIG-IP 1.5 CUST_PRIVATE_BOND0 - ETH0 VF1
-          brctl addbr eth0vf1
-          brctl addif eth0vf1 ens1f0v1
-          ip link set up ens1f0v1
-      
-          # BIG-IP 1.6 CUST_PRIVATE_BOND1 - ETH2 VF1
-          brctl addbr eth2vf1
-          brctl addif eth2vf1 ens1f2v1
-          ip link set up ens1f2v1
-      
-          # BIG-IP 1.7 CUST_PRIVATE_BOND0 - ETH1 VF1
-          brctl addbr eth1vf1onboarding
-          brctl addif eth1vf1 ens1f1v1
-          ip link set up ens1f1v1
-      
-          # BIG-IP 1.8 CUST_PRIVATE_BOND1 - ETH3 VF1
-          brctl addbr eth3vf1
-          brctl addif eth3vf1 ens1f3v1
-          ip link set up ens1f3v1
-      }
-      
       
       function download_bigip_image {
           mkdir -p "$script_dir/BIGIPImages"
@@ -204,8 +198,8 @@ write_files:
       create_bigip_userdata
       create_bigip_domain_xml
       
-      #echo "starting BIG-IP virtual edition"
-      #virsh start $BIGIP_VM_NAME
+      echo "starting BIG-IP virtual edition"
+      virsh start $BIGIP_VM_NAME
   - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
     permissions: 0644
     content: |
@@ -445,7 +439,7 @@ write_files:
               down-delay: 0
         bridges:
           br0:
-            addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__]
+            addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__, __HOST_LINK_LOCAL_MANAGEMENT_IP__]
             interfaces: [bond0]
             nameservers:
               addresses:

@@ -115,7 +115,7 @@ network:
         down-delay: 0
   bridges:
     br0:
-      addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__]
+      addresses: [__PRIVATE_IP_ADDRESS__/__PRIVATE_IP_MASK__, __HOST_LINK_LOCAL_MANAGEMENT_IP__]
       interfaces: [bond0]
       nameservers:
         addresses:
