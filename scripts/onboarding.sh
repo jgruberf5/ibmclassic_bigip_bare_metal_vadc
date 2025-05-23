@@ -31,9 +31,9 @@ function create_netplan {
     sed -i "s/__PRIVATE_IP_ADDRESS__/$PRIVATE_IP_ADDRESS/g" $NETPLAN
     sed -i "s/__PRIVATE_IP_MASK__/$PRIVATE_IP_MASK/g" $NETPLAN
     sed -i "s/__PRIVATE_NEXT_HOP__/$PRIVATE_NEXT_HOP/g" $NETPLAN
-    cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.bak
-    cp $NETPLAN /etc/netplan/01-netcfg.yaml
-    netplan apply
+    cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
+    #cp $NETPLAN /etc/netplan/01-netcfg.yaml
+    #netplan apply
 }
 
 function create_bigip_userdata {
@@ -131,10 +131,15 @@ function manual_network_setup {
     ip link set up ens1f3v1
 }
 
+
 function download_bigip_image {
     mkdir -p "$script_dir/BIGIPImages"
     echo "Downloading $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME..."
     wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+}
+
+function forward_management_traffic {
+    echo "creating port forwarding rules for BIG-IP VE management"
 }
 
 assure_packages
@@ -143,5 +148,5 @@ create_netplan
 create_bigip_userdata
 create_bigip_domain_xml
 
-echo "starting BIG-IP virtual edition"
-virsh start $BIGIP_VM_NAME
+#echo "starting BIG-IP virtual edition"
+#virsh start $BIGIP_VM_NAME
