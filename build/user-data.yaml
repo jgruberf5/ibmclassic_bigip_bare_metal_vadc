@@ -69,7 +69,13 @@ write_files:
         exit 1
       fi
       
+      function assure_packages {
+        apt update
+        apt install -qq -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage
+      }
+      
       function create_netplan {
+          echo "Creating management access and activating SR-IOV virtual functions"
           NETPLAN_TEMPLATE="$script_dir/netplan_template.yaml"
           NETPLAN="$script_dir/netplan.yaml"
           cp $NETPLAN_TEMPLATE $NETPLAN
@@ -87,6 +93,7 @@ write_files:
       }
       
       function create_bigip_userdata {
+          echo "Creating BIG-IP cloud-init user_data"
           BIGIP_CLOUDINIT_USERDATA_TEMPLATE="$script_dir/BIGIPUserDataTemplate.yaml"
           BIGIP_CLOUD_USERDATA="$script_dir/BIGIPUserData.yaml"
           cp $BIGIP_CLOUDINIT_USERDATA_TEMPLATE $BIGIP_CLOUD_USERDATA
@@ -110,6 +117,7 @@ write_files:
       }
       
       function create_bigip_domain_xml {
+          echo "Creating libvirt domain XML for BIG-IP virtual edition"
           BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
           BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
           BIGIP_IMAGE_FILE="$full_script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
@@ -181,14 +189,17 @@ write_files:
       
       function download_bigip_image {
           mkdir -p "$script_dir/BIGIPImages"
+          echo "Downloading $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME..."
           wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
       }
       
+      assure_packages
       download_bigip_image
       create_netplan
       create_bigip_userdata
       create_bigip_domain_xml
       
+      echo "starting BIG-IP virtual edition"
       virsh start $BIGIP_VM_NAME
   - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
     permissions: 0644
