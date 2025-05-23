@@ -93,6 +93,7 @@ function forward_management_traffic {
 create_netplan
 assure_packages
 download_bigip_image
+apply_netplan
 create_bigip_userdata
 create_bigip_domain_xml
 
