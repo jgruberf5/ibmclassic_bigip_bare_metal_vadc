@@ -156,7 +156,7 @@ write_files:
           sed -i "s|__DNS_2__|$DNS_2|g" $BIGIP_CLOUD_USERDATA
           sed -i "s|__BIGIP_MANAGEMENT_IP__|$BIGIP_MANAGEMENT_IP|g" $BIGIP_CLOUD_USERDATA
           sed -i "s|__BIGIP_MANAGEMENT_NEXT_HOP__|$BIGIP_MANAGEMENT_NEXT_HOP|g" $BIGIP_CLOUD_USERDATA
-          sed -i "s/__BIGIP_MANAGEMENT_MTU__|$BIGIP_MANAGEMENT_MTU|g" $BIGIP_CLOUD_USERDATA
+          sed -i "s|__BIGIP_MANAGEMENT_MTU__|$BIGIP_MANAGEMENT_MTU|g" $BIGIP_CLOUD_USERDATA
           rm -rf "$script_dir/cidataiso"
           mkdir -p "$script_dir/cidataiso"
           echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
