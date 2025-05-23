@@ -77,8 +77,8 @@ export BIGIP_SSH_AUTH_KEY=$SSH_AUTH_KEY
 # This will depend on the linux host routing to the BIG-IP virtual edition management
 # through the management bridge (L3)
 #
-export BIGIP_MANAGEMENT_IP=169.254.254.2/31
-export HOST_LINK_LOCAL_MANAGEMENT_IP=169.254.254.1
+export BIGIP_MANAGEMENT_IP=169.254.254.2/16
+export HOST_LINK_LOCAL_MANAGEMENT_IP=169.254.254.1/16
 export BIGIP_MANAGEMENT_NEXT_HOP=$HOST_LINK_LOCAL_MANAGEMENT_IP
 
 export BIGIP_MANAGEMENT_MTU=1460
