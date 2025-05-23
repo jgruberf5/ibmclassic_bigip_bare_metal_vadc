@@ -60,10 +60,34 @@
         <source bridge="br0"/>
         <model type="virtio"/>
       </interface>
+      <!--
+      Use: lshw -class network -businfo   
+      to get the PCI addresses of the devices.
+
+      Remember these are wired in order eth0vf0, then eth2vf0
+
+      so the bridge interface you are replace for:
+
+      eth0vf0 = ens1f0v0
+      eth2vf0 = ens1f2v0
+
+      <interface type='hostdev' managed='yes'>
+      <source>
+          <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x0'/>
+      </source>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+      -->
       <interface type="bridge">
         <source bridge="eth0vf0"/>
         <model type="virtio"/>
       </interface>
+      <!--
+      <interface type='hostdev' managed='yes'>
+      <source>
+          <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x0'/>
+      </source>
+      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+      -->
       <interface type="bridge">
         <source bridge="eth2vf0"/>
         <model type="virtio"/>
