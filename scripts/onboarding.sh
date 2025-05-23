@@ -25,6 +25,7 @@ function create_netplan {
     sed -i "s/__PRIVATE_IP_ADDRESS__/$PRIVATE_IP_ADDRESS/g" $NETPLAN
     sed -i "s/__PRIVATE_IP_MASK__/$PRIVATE_IP_MASK/g" $NETPLAN
     sed -i "s/__PRIVATE_NEXT_HOP__/$PRIVATE_NEXT_HOP/g" $NETPLAN
+    cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.bak
     cp $NETPLAN /etc/netplan/01-netcfg.yaml
     netplan apply
 }
@@ -124,7 +125,7 @@ function manual_network_setup {
 
 function download_bigip_image {
     mkdir -p "$script_dir/BIGIPImages"
-    wget -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+    wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
 }
 
 download_bigip_image
