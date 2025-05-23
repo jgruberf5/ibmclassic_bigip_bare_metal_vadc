@@ -15,8 +15,8 @@ fi
 
 function assure_packages {
   echo "Installing hypervisor and qemu agent requirements"
-  nohup sh -c apt update || true
-  nohup sh -c apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
+  apt update || true
+  apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
 }
 
 function create_netplan {

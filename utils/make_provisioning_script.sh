@@ -19,7 +19,7 @@ echo "#!/bin/bash" > onboarding.sh
 echo "archive=$archive" >> onboarding.sh
 echo "echo \$archive | base64 -d | tar -xz -C /" >> onboarding.sh
 echo "chmod +x '$host_destination_path/onboarding.sh'" >> onboarding.sh
-echo "nohup sh -c '$host_destination_path/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log" >> onboarding.sh
+echo "$host_destination_path/onboarding.sh >> /var/log/F5NetworksBIGIPOnboard.log" >> onboarding.sh
 
 rm -rf $(echo "$host_destination_path" | cut -d'/' -f2)
 rm -rf ./scripts.tar.gz

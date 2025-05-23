@@ -122,8 +122,8 @@ write_files:
       
       function assure_packages {
         echo "Installing hypervisor and qemu agent requirements"
-        nohup sh -c apt update || true
-        nohup sh -c apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
+        apt update || true
+        apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
       }
       
       function create_netplan {
@@ -205,7 +205,6 @@ write_files:
       create_bigip_domain_xml
       
       echo "starting BIG-IP virtual edition"
-      virsh start $BIGIP_VM_NAME || true
   - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
     permissions: 0644
     content: |
