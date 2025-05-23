@@ -14,12 +14,13 @@ else
 fi
 
 function assure_packages {
-  apt update
-  apt install -qq -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage
+  echo "Installing hypervisor and qemu agent requirements"
+  nohup sh -c apt update || true
+  nohup sh -c apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
 }
 
 function create_netplan {
-    echo "Creating management access and activating SR-IOV virtual functions"
+    echo "Creating BIG-IP virtual edition management access and activating SR-IOV virtual functions"
     NETPLAN_TEMPLATE="$script_dir/netplan_template.yaml"
     NETPLAN="$script_dir/netplan.yaml"
     cp $NETPLAN_TEMPLATE $NETPLAN
@@ -32,6 +33,10 @@ function create_netplan {
     sed -i "s|__PRIVATE_IP_MASK__|$PRIVATE_IP_MASK|g" $NETPLAN
     sed -i "s|__PRIVATE_NEXT_HOP__|$PRIVATE_NEXT_HOP|g" $NETPLAN
     sed -i "s|__HOST_LINK_LOCAL_MANAGEMENT_IP__|$HOST_LINK_LOCAL_MANAGEMENT_IP|g" $NETPLAN
+}
+
+function apply_netplan {
+    echo "Applying Netplan"
     cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
     cp $NETPLAN /etc/netplan/01-netcfg.yaml
     netplan apply
@@ -56,7 +61,7 @@ function create_bigip_userdata {
     echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
     mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
     pushd $script_dir/cidataiso
-    mkisofs -V cidata -lJR -o output.iso meta-data user-data
+    mkisofs -V cidata -lJR -o output.iso meta-data user-data || true
     popd
     cp $script_dir/cidataiso/output.iso $BIGIP_CLOUDINIT_ISO
 }
@@ -85,11 +90,11 @@ function forward_management_traffic {
     echo "creating port forwarding rules for BIG-IP VE management"
 }
 
+create_netplan
 assure_packages
 download_bigip_image
-create_netplan
 create_bigip_userdata
 create_bigip_domain_xml
 
 echo "starting BIG-IP virtual edition"
-virsh start $BIGIP_VM_NAME
+virsh start $BIGIP_VM_NAME || true

@@ -121,12 +121,13 @@ write_files:
       fi
       
       function assure_packages {
-        apt update
-        apt install -qq -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage
+        echo "Installing hypervisor and qemu agent requirements"
+        nohup sh -c apt update || true
+        nohup sh -c apt install -y bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage || true
       }
       
       function create_netplan {
-          echo "Creating management access and activating SR-IOV virtual functions"
+          echo "Creating BIG-IP virtual edition management access and activating SR-IOV virtual functions"
           NETPLAN_TEMPLATE="$script_dir/netplan_template.yaml"
           NETPLAN="$script_dir/netplan.yaml"
           cp $NETPLAN_TEMPLATE $NETPLAN
@@ -139,6 +140,10 @@ write_files:
           sed -i "s|__PRIVATE_IP_MASK__|$PRIVATE_IP_MASK|g" $NETPLAN
           sed -i "s|__PRIVATE_NEXT_HOP__|$PRIVATE_NEXT_HOP|g" $NETPLAN
           sed -i "s|__HOST_LINK_LOCAL_MANAGEMENT_IP__|$HOST_LINK_LOCAL_MANAGEMENT_IP|g" $NETPLAN
+      }
+      
+      function apply_netplan {
+          echo "Applying Netplan"
           cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
           cp $NETPLAN /etc/netplan/01-netcfg.yaml
           netplan apply
@@ -163,7 +168,7 @@ write_files:
           echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
           mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
           pushd $script_dir/cidataiso
-          mkisofs -V cidata -lJR -o output.iso meta-data user-data
+          mkisofs -V cidata -lJR -o output.iso meta-data user-data || true
           popd
           cp $script_dir/cidataiso/output.iso $BIGIP_CLOUDINIT_ISO
       }
@@ -192,14 +197,14 @@ write_files:
           echo "creating port forwarding rules for BIG-IP VE management"
       }
       
+      create_netplan
       assure_packages
       download_bigip_image
-      create_netplan
       create_bigip_userdata
       create_bigip_domain_xml
       
       echo "starting BIG-IP virtual edition"
-      virsh start $BIGIP_VM_NAME
+      virsh start $BIGIP_VM_NAME || true
   - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
     permissions: 0644
     content: |
@@ -265,38 +270,135 @@ write_files:
               <source bridge="br0"/>
               <model type="virtio"/>
             </interface>
+            <!--
+            Use: lshw -class network -businfo   
+            to get the PCI addresses of the devices.
+      
+            Remember these are wired in order eth0vf0, then eth2vf0
+      
+            so the bridge interface you are replace for:
+      
+            eth0vf0 = ens1f0v0
+            eth2vf0 = ens1f2v0
+      
+            Hardware addressing for IBM Bare Metal instances - PCI addresses are hardcoded and 
+            not templated
+      
+            Assure the Intel SR-IOV NIC is in the same bus and slot for all deployments
+      
+            lshw -class network -businfo
+            Bus info          Device           Class          Description
+            =============================================================
+            pci@0000:06:00.0  eth0             network        Ethernet Controller X710/X557-AT 10GBASE-T
+            pci@0000:06:00.1  eth1             network        Ethernet Controller X710/X557-AT 10GBASE-T
+            pci@0000:06:00.2  eth2             network        Ethernet Controller X710/X557-AT 10GBASE-T
+            pci@0000:06:00.3  eth3             network        Ethernet Controller X710/X557-AT 10GBASE-T
+            pci@0000:06:02.0  ens1f0v0         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:02.1  ens1f0v1         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:06.0  ens1f1v0         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:06.1  ens1f1v1         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:0a.0  ens1f2v0         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:0a.1  ens1f2v1         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:0e.0  ens1f3v0         network        Ethernet Virtual Function 700 Series
+            pci@0000:06:0e.1  ens1f3v1         network        Ethernet Virtual Function 700 Series
+      
+            -->
+            <!-- PCI Passthrough for VF ens1f0v0  pci@0000:06:02.0 -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x0'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth0vf0"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!-- PCI Passthrough for VF pci@0000:06:0a.0  ens1f2v0  -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x0'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth2vf0"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!-- PCI Passthrough for VF pci@0000:06:06.0 ens1f1v0 -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x0'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth1vf0"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!-- PCI Passthrough for VF pci@0000:06:0e.0  ens1f3v0   -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x0'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth3vf0"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!-- PCI Passthrough for VF ppci@0000:06:02.1  ens1f0v1   -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x1'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth0vf1"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!--  PCI Passthrough for VF pci@0000:06:0a.1  ens1f2v1   -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x1'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth2vf1"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!--  PCI Passthrough for VF pci@0000:06:06.1  ens1f1v1   -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x1'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x0d' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth1vf1"/>
               <model type="virtio"/>
             </interface>
+            -->
+            <!-- PCI Passthrough for VF pci@0000:06:0e.1  ens1f3v1   -->
+            <interface type='hostdev' managed='yes'>
+            <source>
+                <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x1'/>
+            </source>
+            <address type='pci' domain='0x0000' bus='0x00' slot='0x0e' function='0x0'/>
+            <!-- bridge implementation for test
             <interface type="bridge">
               <source bridge="eth3vf1"/>
               <model type="virtio"/>
             </interface>
+            -->
             <console type="pty"/>
             <channel type="unix">
               <source mode="bind"/>
@@ -452,22 +554,27 @@ write_files:
                 via: __PRIVATE_NEXT_HOP__
               - to: 166.8.0.0/14
                 via: __PRIVATE_NEXT_HOP__
-          eth0vf0:
-            interfaces: [vf1]
-          eth0vf1:
-            interfaces: [vf2]
-          eth1vf0:
-            interfaces: [vf3]
-          eth1vf1:
-            interfaces: [vf4]
-          eth2vf0:
-            interfaces: [vf5]
-          eth2vf1:
-            interfaces: [vf6]
-          eth3vf0:
-            interfaces: [vf7]
-          eth3vf1:
-            interfaces: [vf8]
+      #
+      #  Bridge implementation for BIG-IP virtual addition testing
+      #
+      #  Changes here will require changes to the libvirt domain XML to match
+      #
+      #    eth0vf0:
+      #      interfaces: [vf1]
+      #    eth0vf1:
+      #      interfaces: [vf2]
+      #    eth1vf0:
+      #      interfaces: [vf3]
+      #    eth1vf1:
+      #      interfaces: [vf4]
+      #    eth2vf0:
+      #      interfaces: [vf5]
+      #    eth2vf1:
+      #      interfaces: [vf6]
+      #    eth3vf0:
+      #      interfaces: [vf7]
+      #    eth3vf1:
+      #      interfaces: [vf8]
   - path: /opt/F5Networks/onboarding/BIGIPUserDataTemplate.yaml
     permissions: 0644
     content: |
