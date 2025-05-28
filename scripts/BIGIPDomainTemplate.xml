@@ -94,12 +94,14 @@
 
       -->
       <!-- PCI Passthrough for VF ens1f0v0  pci@0000:06:02.0 -->
+      <!--
       <interface type='hostdev' managed='yes'>
       <source>
           <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x0'/>
       </source>
       <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
       </interface>
+      -->
       <!-- bridge implementation for test -->
       <interface type="bridge">
         <source bridge="eth0vf0"/>
