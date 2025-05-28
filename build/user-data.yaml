@@ -146,7 +146,7 @@ write_files:
           echo "Applying Netplan"
           cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
           cp $NETPLAN /etc/netplan/01-netcfg.yaml
-          netplan apply
+          netplan apply || true
       }
       
       function create_bigip_userdata {
@@ -184,13 +184,13 @@ write_files:
           sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN
           sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
           sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
-          virsh define $BIGIP_DOMAIN
+          virsh define $BIGIP_DOMAIN || true
       }
       
       function download_bigip_image {
           mkdir -p "$script_dir/BIGIPImages"
           echo "Downloading $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME..."
-          wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+          wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages" || true
       }
       
       function forward_management_traffic {
@@ -309,96 +309,110 @@ write_files:
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x0'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth0vf0"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!-- PCI Passthrough for VF pci@0000:06:0a.0  ens1f2v0  -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x0'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth2vf0"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!-- PCI Passthrough for VF pci@0000:06:06.0 ens1f1v0 -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x0'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!--bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth1vf0"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!-- PCI Passthrough for VF pci@0000:06:0e.0  ens1f3v0   -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x0'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth3vf0"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!-- PCI Passthrough for VF ppci@0000:06:02.1  ens1f0v1   -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x1'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth0vf1"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!--  PCI Passthrough for VF pci@0000:06:0a.1  ens1f2v1   -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x1'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth2vf1"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!--  PCI Passthrough for VF pci@0000:06:06.1  ens1f1v1   -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x1'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0d' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth1vf1"/>
               <model type="virtio"/>
             </interface>
-            -->
             <!-- PCI Passthrough for VF pci@0000:06:0e.1  ens1f3v1   -->
+            <!--
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x1'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0e' function='0x0'/>
-            <!-- bridge implementation for test
+            </interface>
+            -->
+            <!-- bridge implementation for test -->
             <interface type="bridge">
               <source bridge="eth3vf1"/>
               <model type="virtio"/>
             </interface>
-            -->
             <console type="pty"/>
             <channel type="unix">
               <source mode="bind"/>
@@ -559,22 +573,22 @@ write_files:
       #
       #  Changes here will require changes to the libvirt domain XML to match
       #
-      #    eth0vf0:
-      #      interfaces: [vf1]
-      #    eth0vf1:
-      #      interfaces: [vf2]
-      #    eth1vf0:
-      #      interfaces: [vf3]
-      #    eth1vf1:
-      #      interfaces: [vf4]
-      #    eth2vf0:
-      #      interfaces: [vf5]
-      #    eth2vf1:
-      #      interfaces: [vf6]
-      #    eth3vf0:
-      #      interfaces: [vf7]
-      #    eth3vf1:
-      #      interfaces: [vf8]
+          eth0vf0:
+            interfaces: [vf1]
+          eth0vf1:
+            interfaces: [vf2]
+          eth1vf0:
+            interfaces: [vf3]
+          eth1vf1:
+            interfaces: [vf4]
+          eth2vf0:
+            interfaces: [vf5]
+          eth2vf1:
+            interfaces: [vf6]
+          eth3vf0:
+            interfaces: [vf7]
+          eth3vf1:
+            interfaces: [vf8]
   - path: /opt/F5Networks/onboarding/BIGIPUserDataTemplate.yaml
     permissions: 0644
     content: |

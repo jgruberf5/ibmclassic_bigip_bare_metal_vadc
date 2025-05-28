@@ -133,19 +133,19 @@ network:
 #
 #  Changes here will require changes to the libvirt domain XML to match
 #
-#    eth0vf0:
-#      interfaces: [vf1]
-#    eth0vf1:
-#      interfaces: [vf2]
-#    eth1vf0:
-#      interfaces: [vf3]
-#    eth1vf1:
-#      interfaces: [vf4]
-#    eth2vf0:
-#      interfaces: [vf5]
-#    eth2vf1:
-#      interfaces: [vf6]
-#    eth3vf0:
-#      interfaces: [vf7]
-#    eth3vf1:
-#      interfaces: [vf8]
+    eth0vf0:
+      interfaces: [vf1]
+    eth0vf1:
+      interfaces: [vf2]
+    eth1vf0:
+      interfaces: [vf3]
+    eth1vf1:
+      interfaces: [vf4]
+    eth2vf0:
+      interfaces: [vf5]
+    eth2vf1:
+      interfaces: [vf6]
+    eth3vf0:
+      interfaces: [vf7]
+    eth3vf1:
+      interfaces: [vf8]

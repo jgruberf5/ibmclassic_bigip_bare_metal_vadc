@@ -39,7 +39,7 @@ function apply_netplan {
     echo "Applying Netplan"
     cp /etc/netplan/01-netcfg.yaml /etc/netplan/01-netcfg.yaml.original
     cp $NETPLAN /etc/netplan/01-netcfg.yaml
-    netplan apply
+    netplan apply || true
 }
 
 function create_bigip_userdata {
@@ -77,13 +77,13 @@ function create_bigip_domain_xml {
     sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN
     sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
     sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
-    virsh define $BIGIP_DOMAIN
+    virsh define $BIGIP_DOMAIN || true
 }
 
 function download_bigip_image {
     mkdir -p "$script_dir/BIGIPImages"
     echo "Downloading $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME..."
-    wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
+    wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages" || true
 }
 
 function forward_management_traffic {
