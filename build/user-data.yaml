@@ -145,7 +145,7 @@ write_files:
           #
           # Read SSH key added to bare metal server and add to BIG-IP virtual edition
           #
-          SSH_AUTH_KEY=$(cat /root/.ssh/authorized_keys | grep -Ev "^#|^$")
+          BIGIP_SSH_AUTH_KEY=$(cat /root/.ssh/authorized_keys | grep -Ev "^#|^$")
           #
           # Build cloudinit CI data ISO disk
           # 
@@ -238,35 +238,6 @@ write_files:
       }
       
       
-      function add_port_forward_management_traffic {
-          [[ -z "${MANAGEMENT_PORT_FORWARDS}" ]] && MANAGEMENT_PORT_FORWARDS=1
-          if [ "$MANAGEMENT_PORT_FORWARDS" -eq "1" ]; then
-              third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
-              third=$((16#$third))
-              fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
-              fourth=$((16#$fourth))
-              fourth_next=$(($fourth + 1))
-              [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
-              if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
-                  BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
-              fi
-              # managment bridge forwards
-              iptables -t nat -i br0 -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -A FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -i br0 -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -A FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -i br0 -A POSTROUTING -j MASQUERADE
-              # management bridge 
-              iptables -t nat -i bond1 -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -A FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -i bond1 -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -A FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -i bond1 -A POSTROUTING -j MASQUERADE
-      
-          fi
-      }
-      
-      
       function remove_port_forward_management_traffic {
           [[ -z "${MANAGEMENT_PORT_FORWARDS}" ]] && MANAGEMENT_PORT_FORWARDS=1
           if [ "$MANAGEMENT_PORT_FORWARDS" -eq "1" ]; then
@@ -279,18 +250,52 @@ write_files:
               if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
                   BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
               fi
-              # management bridge forwards
-              iptables -t nat -i br0 -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -i br0 -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -i br0 -D POSTROUTING -j MASQUERADE
-              # management bridge forwards
-              ptables -t nat -i bond1 -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -i bond1 -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -i bond1 -D POSTROUTING -j MASQUERADE
+              rules_present=$(iptables -t nat -L | grep DNAT | grep "dpt:2222 to:$BIGIP_MANAGEMENT_IP"|wc -l)
+              while [ "$rules_present" -gt "0" ]; do
+                  # management bridge forwards
+                  iptables -t nat -D PREROUTING -i br0 -p tcp --dport 443 -j DNAT --to $BIGIP_MANAGEMENT_IP:443 > /dev/null 2>&1
+                  iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT > /dev/null 2>&1
+                  iptables -t nat -D PREROUTING -i br0 -p tcp --dport 2222 -j DNAT --to $BIGIP_MANAGEMENT_IP:22 > /dev/null 2>&1
+                  iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT > /dev/null 2>&1
+                  iptables -t nat -D POSTROUTING -j MASQUERADE > /dev/null 2>&1
+                  # management bridge forwards
+                  iptables -t nat -D PREROUTING -i bond1 -p tcp --dport 443 -j DNAT --to $BIGIP_MANAGEMENT_IP:443 > /dev/null 2>&1
+                  iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT > /dev/null 2>&1
+                  iptables -t nat -D PREROUTING -i bond1 -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22 > /dev/null 2>&1
+                  iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT > /dev/null 2>&1
+                  iptables -t nat -D POSTROUTING -j MASQUERADE > /dev/null 2>&1
+                  rules_present=$(iptables -t nat -L | grep DNAT | grep "dpt:2222 to:$BIGIP_MANAGEMENT_IP"|wc -l) > /dev/null 2>&1    
+              done
+          fi
+      }
+      
+      
+      function add_port_forward_management_traffic {
+          [[ -z "${MANAGEMENT_PORT_FORWARDS}" ]] && MANAGEMENT_PORT_FORWARDS=1
+          if [ "$MANAGEMENT_PORT_FORWARDS" -eq "1" ]; then
+              third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
+              third=$((16#$third))
+              fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
+              fourth=$((16#$fourth))
+              fourth_next=$(($fourth + 1))
+              [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+              if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
+                  BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+              fi
+              # remove so we don't add multiple times
+              remove_port_forward_management_traffic
+              # managment bridge forwards
+              iptables -t nat -I PREROUTING -i br0  -p tcp --dport 443 -j DNAT --to $BIGIP_MANAGEMENT_IP:443
+              iptables -I FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -I PREROUTING -i br0  -p tcp --dport 2222 -j DNAT --to $BIGIP_MANAGEMENT_IP:22
+              iptables -I FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -I POSTROUTING -j MASQUERADE
+              # management bridge 
+              iptables -t nat -I PREROUTING -i bond1 -p tcp --dport 443 -j DNAT --to $BIGIP_MANAGEMENT_IP:443
+              iptables -I FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -I PREROUTING -i bond1 -p tcp --dport 2222 -j DNAT --to $BIGIP_MANAGEMENT_IP:22
+              iptables -A FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -I POSTROUTING -j MASQUERADE
           fi
       }
       
