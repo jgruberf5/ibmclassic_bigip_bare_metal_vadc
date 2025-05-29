@@ -3,6 +3,11 @@
 export script_dir=/opt/F5Networks/onboarding
 
 
+if [ -f "/etc/bigip" ]; then
+    source /etc/bigip
+fi
+
+
 function set_permissions {
     chmod +x $script_dir/scripts/start
     chmod +x $script_dir/scripts/stop
@@ -205,8 +210,7 @@ function download_bigip_image {
       image_md5=$(cat "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5")
     done
     cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
-  fi  
-
+  fi
 }
 
 
@@ -280,10 +284,11 @@ function create_systemd_unit_file {
     echo "" >> $UNIT_FILE
     echo "[Service]" >> $UNIT_FILE
     echo "WorkingDirectory=/opt/F5Networks/onboarding" >> $UNIT_FILE
-    echo "Type=simple" >> $UNIT_FILE
+    echo "Type=oneshot" >> $UNIT_FILE
     echo "User=root" >> $UNIT_FILE
     echo "ExecStart=/opt/F5Networks/onboarding/start" >> $UNIT_FILE
     echo "ExecStop=/opt/F5Networks/onboarding/stop" >> $UNIT_FILE
+    echo "RemainAfterExit=1" >> $UNIT_FILE
     echo "" >> $UNIT_FILE
     echo "[Install]" >> $UNIT_FILE
     echo "WantedBy=multi-user.target" >> $UNIT_FILE
