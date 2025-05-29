@@ -215,38 +215,44 @@ function download_bigip_image {
 
 
 function add_port_forward_management_traffic {
-    third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
-    third=$((16#$third))
-    fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
-    fourth=$((16#$fourth))
-    fourth_next=$(($fourth + 1))
-    [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
-    if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
-        BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+    [[ -z "${MANAGEMENT_PORT_FORWARDS}" ]] && MANAGEMENT_PORT_FORWARDS=1
+    if [ "$MANAGEMENT_PORT_FORWARDS" -eq "1" ]; then
+        third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
+        third=$((16#$third))
+        fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
+        fourth=$((16#$fourth))
+        fourth_next=$(($fourth + 1))
+        [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+        if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
+            BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+        fi
+        iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+        iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+        iptables -t nat -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+        iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+        iptables -t nat -A POSTROUTING -j MASQUERADE
     fi
-    iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-    iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-    iptables -t nat -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-    iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-    iptables -t nat -A POSTROUTING -j MASQUERADE
 }
 
 
 function remove_port_forward_management_traffic {
-    third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
-    third=$((16#$third))
-    fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
-    fourth=$((16#$fourth))
-    fourth_next=$(($fourth + 1))
-    [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
-    if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
-        BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+    [[ -z "${MANAGEMENT_PORT_FORWARDS}" ]] && MANAGEMENT_PORT_FORWARDS=1
+    if [ "$MANAGEMENT_PORT_FORWARDS" -eq "1" ]; then
+        third=$(cat /sys/class/net/bond0/address | cut -d':' -f5)
+        third=$((16#$third))
+        fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
+        fourth=$((16#$fourth))
+        fourth_next=$(($fourth + 1))
+        [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+        if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
+            BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+        fi
+        iptables -t nat -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+        iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+        iptables -t nat -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+        iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+        iptables -t nat -D POSTROUTING -j MASQUERADE
     fi
-    iptables -t nat -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-    iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-    iptables -t nat -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-    iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-    iptables -t nat -D POSTROUTING -j MASQUERADE
 }
 
 

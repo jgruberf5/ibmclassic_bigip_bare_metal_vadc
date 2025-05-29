@@ -5,6 +5,8 @@ Assumes one BIG-IP virtual edition instance per bare metal server.
 
 Set install varables in a `/etc/bigip` file in `sh` ENV exported variable format.
 
+Sample install variable ENV file found at `/opt/F5Networks/onboarding/scripts/etc_bigip_sample.txt`.
+
 Install variables:
 
 | Variable  | Default | Description |
@@ -21,6 +23,7 @@ Install variables:
 | BIGIP_VM_IMAGE_DOWNLOAD_PATH | IBM COS 17.5.0-0.0.15 ALL 1SLOT Bucket | Object storage bucket for the BIG-IP virtual edition qcow2 disk image |
 | BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_NAME | BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2 | Object storage file for the BIG-IP virtual edition qcow2 disk image |
 | BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_MD5 | BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2.md5 | Object storage file for the BIG-IP virtual edition qcow2 md5 hash |
+| MANAGEMENT_PORT_FORWARDS | 1 | 0 or 1 to enable or disable TCP port forwarding for 443 to XUI and 2222 to SSH on host br0 and bond1 interfaces for the BIG-IP virtual edition |
 
 Example `/etc/bigip`
 
@@ -33,4 +36,5 @@ export BIGIP_VM_VCPUS=8
 export BIGIP_VM_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
 export BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
 export BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_MD5='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2.md5'
+export MANAGEMENT_PORT_FORWARDS=0
 ```
