@@ -3,6 +3,12 @@
 export script_dir=/opt/F5Networks/onboarding
 
 
+function set_permissions {
+    chmod +x $script_dir/scripts/start
+    chmod +x $script_dir/scripts/stop
+}
+
+
 function assure_packages {
   echo "Installing hypervisor and qemu agent requirements"
   apt update
