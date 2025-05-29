@@ -7,8 +7,8 @@ Set install varables in a `/etc/bigip` file in `sh` ENV exported variable format
 
 Install variables:
 
-| Variable    | Default | Description |
-| -------- | ------- |
+| Variable  | Default | Description |
+| ------------- | ------------- | ------------- |
 | TMOS_ADMIN_PASSWORD  | F5Networks! | The initial ssh root account and XUI admin password |
 | BIGIP_HOSTNAME | The bare metal host hostname | BIG-IP virtual edition instance hostname |
 | BIGIP_MANAGEMENT_IP | generated IPv4 link local address | BIG-IP virtual edition management inteface IP CIDR on the bond0 bridge |
@@ -28,7 +28,7 @@ Example `/etc/bigip`
 export TMOS_ADMIN_PASSWORD='SuperSecureF5Password!123'
 export BIGIP_MANAGEMENT_IP='10.120.92.159/26'
 export BIGIP_MANAGEMENT_NEXT_HOP='10.120.92.129'
-export BIGIP_VM_MEMORY=17179869
+export BIGIP_VM_MEMORY=16777216
 export BIGIP_VM_VCPUS=8
 export BIGIP_VM_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
 export BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
