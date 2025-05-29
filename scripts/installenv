@@ -12,7 +12,7 @@ function set_permissions {
 function assure_packages {
   echo "Installing hypervisor and qemu agent requirements"
   apt update
-  for pkg in bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage rinetd; do
+  for pkg in bridge-utils cpu-checker libvirt-clients libvirt-daemon libvirt-daemon-system qemu qemu-kvm genisoimage; do
       installed=$(dpkg-query -W --showformat='${Status}\n' $pkg|grep "install ok installed"|wc -l)
       if [ "$installed" -ne "1" ]; then
           apt install -y $pkg
@@ -138,11 +138,11 @@ function create_bigip_userdata {
     third=$((16#$third))
     fourth=$(cat /sys/class/net/bond0/address | cut -d':' -f6)
     fourth=$((16#$fourth))
-    HOST_LINK_LOCAL_MANAGEMENT_IP="169.254.$third.$fourth/16"
+    HOST_LINK_LOCAL_MANAGEMENT_IP="169.254.$third.$fourth"
     fourth_next=$(($fourth + 1))
-    [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+    [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next/16"
     sed -i "s|__BIGIP_MANAGEMENT_IP__|$BIGIP_MANAGEMENT_IP|g" $BIGIP_CLOUD_USERDATA
-    [[ -z "${BIGIP_MANAGEMENT_NEXT_HOP}" ]] && BIGIP_MANAGEMENT_NEXT_HOP=$HOST_LINK_LOCAL_MANAGEMENT
+    [[ -z "${BIGIP_MANAGEMENT_NEXT_HOP}" ]] && BIGIP_MANAGEMENT_NEXT_HOP=$HOST_LINK_LOCAL_MANAGEMENT_IP
     sed -i "s|__BIGIP_MANAGEMENT_NEXT_HOP__|$BIGIP_MANAGEMENT_NEXT_HOP|g" $BIGIP_CLOUD_USERDATA
     [[ -z "${BIGIP_MANAGEMENT_MTU}" ]] && BIGIP_MANAGEMENT_MTU="1460"
     sed -i "s|__BIGIP_MANAGEMENT_MTU__|$BIGIP_MANAGEMENT_MTU|g" $BIGIP_CLOUD_USERDATA
@@ -184,7 +184,7 @@ function create_bigip_domain_xml {
 function download_bigip_image {
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
-  [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}"]] && BIGIP_IMAGE_DOWNLOAD_PATH="$BIGIP_IMAGE_DOWNLOAD_NAME.md5"
+  [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5="$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME.md5"
   if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ] && [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
       echo "Existing BIG-IP virtual edition disk exists.. skipping download"
   else
@@ -194,16 +194,16 @@ function download_bigip_image {
     # Download with MD5 check
     download_md5=0
     image_md5=1
-    while [ ! "$image_md5" == "$download_md5" ]; then
+    while [ ! "$image_md5" == "$download_md5" ]; do
       rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
       echo "Downloading $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME..."
       wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME -P "$script_dir/BIGIPImages"
       rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5"
       echo "Downloading $BIGIP_IMAGE_DOWNLOAD_MD5/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5..."
       wget --retry-connrefused --waitretry=1 --read-timeout=30 --timeout=15 -t 0 -nc $BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5 -P "$script_dir/BIGIPImages"
-      download_md5=$(md5sum "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME")
+      download_md5=$(md5sum "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" | cut -d' ' -f1)
       image_md5=$(cat "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5")
-    fi
+    done
     cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
   fi  
 
@@ -217,6 +217,9 @@ function add_port_forward_management_traffic {
     fourth=$((16#$fourth))
     fourth_next=$(($fourth + 1))
     [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+    if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
+        BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+    fi
     iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
     iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
     iptables -t nat -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
@@ -232,6 +235,9 @@ function remove_port_forward_management_traffic {
     fourth=$((16#$fourth))
     fourth_next=$(($fourth + 1))
     [[ -z "${BIGIP_MANAGEMENT_IP}" ]] && BIGIP_MANAGEMENT_IP="169.254.$third.$fourth_next"
+    if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
+        BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
+    fi
     iptables -t nat -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
     iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
     iptables -t nat -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
@@ -275,13 +281,9 @@ function create_systemd_unit_file {
     echo "[Service]" >> $UNIT_FILE
     echo "WorkingDirectory=/opt/F5Networks/onboarding" >> $UNIT_FILE
     echo "Type=simple" >> $UNIT_FILE
-    echo "Restart=always" >> $UNIT_FILE
-    echo "RestartSec=1" >> $UNIT_FILE
     echo "User=root" >> $UNIT_FILE
     echo "ExecStart=/opt/F5Networks/onboarding/start" >> $UNIT_FILE
     echo "ExecStop=/opt/F5Networks/onboarding/stop" >> $UNIT_FILE
-    #echo "StandardOutput=syslog" >> $UNIT_FILE
-    #echo "StandardError=syslog" >> $UNIT_FILE
     echo "" >> $UNIT_FILE
     echo "[Install]" >> $UNIT_FILE
     echo "WantedBy=multi-user.target" >> $UNIT_FILE
@@ -293,8 +295,8 @@ function enable_systemd_service {
 }
 
 
-function disable_systemd_service {systemctl enable bigip-virtual-edition.service
-    systemctl enable bigip-virtual-edition.service
+function disable_systemd_service {
+    systemctl disable bigip-virtual-edition.service
 }
 
 

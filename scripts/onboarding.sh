@@ -1,5 +1,7 @@
 #!/bin/bash
 
+export script_dir=/opt/F5Networks/onboarding
+
 # Source the installenv file
 if [ -f "$script_dir/installenv" ]; then
   source "$script_dir/installenv"
@@ -8,4 +10,7 @@ else
   exit 1
 fi
 
-start
+set_permissions
+create_systemd_unit_file
+enable_systemd_service
+start_systemd_service
