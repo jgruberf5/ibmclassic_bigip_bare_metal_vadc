@@ -38,3 +38,9 @@ export BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-0310250
 export BIGIP_VM_IMAGE_DOWNLOAD_IMAGE_MD5='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2.md5'
 export MANAGEMENT_PORT_FORWARDS=0
 ```
+
+## Starting and Stop BIG-IP Virtual Edition
+
+To start the BIG-IP: `systemctl start bigip-virtual-edition`
+
+To shutdown the BIG-IP: `systemctl stop bigip-virtual-edition`
