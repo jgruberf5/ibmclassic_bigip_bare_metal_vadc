@@ -1,9 +1,32 @@
 # ibmclassic_bigip_bare_metal_vadc
 BIG-IP TMOS Running on IBM Bare Metal Servers for vADC Reference Architecture
 
-Assumes one BIG-IP virtual edition instance per bare metal server.
+This automation can be run as a IBM Classic post provisioning script or as cloudinit user-data.
 
-Set install varables in a `/etc/bigip` file in `sh` ENV exported variable format.
+To generate both of project artifacts:
+
+1) clone the repository
+
+`$ git clone https://github.com/jgruberf5/ibmclassic_bigip_bare_metal_vadc.git`
+
+2) create the post provisioning script and cloud-init userdata artifacts
+
+`$ make`
+
+The artifacts will be generated in a `build` subdirectory of the cloned respository.
+
+| Artifact File  | Mode | Description |
+| ------------- | ------------- | ------------- |
+| `build/onboarding.sh` | provisioning script | host this script on a public bucket and reference the object URL when provisioning a IBM Classic bare metal server |
+| `build/user-data.yaml | cloud-init user-data | post as user-data for the IBM Classic bare metal server |
+
+The automation will generate a `systemd` oneshot service which will assure the appropriate F5 assets are installed and that the standard IBM Classic bare metal service networking is adapted for BIG-IP virtual edition use.
+
+![image](./assets/ibm_baremetal_bigip_virtual_edition_networking_diagram.svg)
+
+This automation assumes one BIG-IP virtual edition instance per IBM Classic baremetal server.
+
+Before running the `systemd` service you can install varables in a `/etc/bigip` file on the server in `sh` ENV exported variable format. The variables in the file allows you to easily customize the deployment.
 
 Sample install variable ENV file found at `/opt/F5Networks/onboarding/scripts/etc_bigip_sample.txt`.
 
