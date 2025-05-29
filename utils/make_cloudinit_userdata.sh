@@ -49,6 +49,24 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/onboarding.sh"
 
+# onboarding script
+echo "  - path: $destination_dir/start" >> $cloudinit_file
+echo "    permissions: 0755" >> $cloudinit_file
+echo "    content: |" >> $cloudinit_file
+
+while IFS= read -r line; do
+  echo "      $line" >> $cloudinit_file
+done < "../scripts/start"
+
+# onboarding script
+echo "  - path: $destination_dir/stop" >> $cloudinit_file
+echo "    permissions: 0755" >> $cloudinit_file
+echo "    content: |" >> $cloudinit_file
+
+while IFS= read -r line; do
+  echo "      $line" >> $cloudinit_file
+done < "../scripts/stop"
+
 # BIGIPDomainTemplate
 echo "  - path: $destination_dir/BIGIPDomainTemplate.xml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
