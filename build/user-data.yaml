@@ -173,7 +173,7 @@ write_files:
           [[ -z "${BIGIP_INSTANCE_ID}" ]] && BIGIP_INSTANCE_ID="bigipinstance1"
           rm -rf "$script_dir/cidataiso"
           mkdir -p "$script_dir/cidataiso"
-          echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
+          echo "instance-id: {{ $BIGIPecho "Type=oneshot" >> $UNIT_FILE_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
           echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
           mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
           pushd $script_dir/cidataiso
@@ -245,11 +245,19 @@ write_files:
               if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
                   BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
               fi
-              iptables -t nat -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -A FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -A POSTROUTING -j MASQUERADE
+              # managment bridge forwards
+              iptables -t nat -i br0 -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+              iptables -A FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -i br0 -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+              iptables -A FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -i br0 -A POSTROUTING -j MASQUERADE
+              # management bridge 
+              iptables -t nat -i bond1 -A PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+              iptables -A FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -i bond1 -A PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+              iptables -A FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -i bond1 -A POSTROUTING -j MASQUERADE
+      
           fi
       }
       
@@ -266,11 +274,18 @@ write_files:
               if [[ "$BIGIP_MANAGEMENT_IP" == */* ]]; then
                   BIGIP_MANAGEMENT_IP=$(echo $BIGIP_MANAGEMENT_IP|cut -d'/' -f1)
               fi
-              iptables -t nat -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
-              iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
-              iptables -t nat -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
-              iptables -D FORWARD -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
-              iptables -t nat -D POSTROUTING -j MASQUERADE
+              # management bridge forwards
+              iptables -t nat -i br0 -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+              iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -i br0 -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+              iptables -D FORWARD -i br0 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -i br0 -D POSTROUTING -j MASQUERADE
+              # management bridge forwards
+              ptables -t nat -i bond1 -D PREROUTING -p tcp --dport 443 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:443
+              iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 443 -j ACCEPT
+              iptables -t nat -i bond1 -D PREROUTING -p tcp --dport 2222 -j DNAT --to-destination $BIGIP_MANAGEMENT_IP:22
+              iptables -D FORWARD -i bond1 -p tcp -d $BIGIP_MANAGEMENT_IP --dport 22 -j ACCEPT
+              iptables -t nat -i bond1 -D POSTROUTING -j MASQUERADE
           fi
       }
       
@@ -803,6 +818,12 @@ write_files:
         ip: __BIGIP_MANAGEMENT_IP__
         gw: __BIGIP_MANAGEMENT_NEXT_HOP__
         mtu: __BIGIP_MANAGEMENT_MTU__
+        post_onboard_enabled: true
+        post_onboard_commands:
+          - tmsh create net trunk slPrivate interfaces replace-all-with { 1.1 1.2 }
+          - tmsh create net trunk slPublic interfaces replace-all-with { 1.3 1.4 }
+          - tmsh create net trunk customerPrivate interfaces replace-all-with { 1.5 1.6 }
+          - tmsh create net trunk customerPublic interfaces replace-all-with { 1.7 1.8 }
       tmos_declared:
         enabled: true
         icontrollx_trusted_sources: false
@@ -816,7 +837,7 @@ write_files:
             bigipSystem:
               class: System
               hostname: __BIGIP_HOSTNAME__
-              autoPhonehome": false
+              autoPhonehome: false
             provisioningLevels:
               class: Provision
               ltm: nominal
@@ -828,21 +849,21 @@ write_files:
             slPrivate:
               class: Trunk
               interfaces:
-                - name: 1.1
-                - name: 1.2
+                - "1.1"
+                - "1.2"
             slPublic:
               class: Trunk
               interfaces:
-                - name: 1.3
-                - name: 1.4
+                - "1.3"
+                - "1.4"
             customerPrivate:
               class: Trunk
               interfaces:
-                - name: 1.5
-                - name: 1.6
+                - "1.5"
+                - "1.6"
             customerPublic:
               class: Trunk
               interfaces:
-                - name: 1.7
-                - name: 1.8
+                - "1.7"
+                - "1.8"
 runcmd: [nohup sh -c '/opt/F5Networks/onboarding/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]
