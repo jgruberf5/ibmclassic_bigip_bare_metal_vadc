@@ -68,13 +68,22 @@ while IFS= read -r line; do
 done < "../scripts/stop"
 
 # BIGIPDomainTemplate
-echo "  - path: $destination_dir/BIGIPDomainTemplate.xml" >> $cloudinit_file
+echo "  - path: $destination_dir/BIGIPDomainHOSTDEVTemplate.xml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "../scripts/BIGIPDomainTemplate.xml"
+done < "../scripts/BIGIPDomainHOSTDEVTemplate.xml"
+
+# BIGIPDomainTemplate
+echo "  - path: $destination_dir/BIGIPDomainMACVTAPTemplate.xml" >> $cloudinit_file
+echo "    permissions: 0644" >> $cloudinit_file
+echo "    content: |" >> $cloudinit_file
+
+while IFS= read -r line; do
+  echo "      $line" >> $cloudinit_file
+done < "../scripts/BIGIPDomainMACVTAPTemplate.xml"
 
 # netplan
 echo "  - path: $destination_dir/netplan_template.yaml" >> $cloudinit_file

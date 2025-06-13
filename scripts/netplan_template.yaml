@@ -35,50 +35,34 @@ network:
           - __DNS_2__
       virtual-function-count: 2
     vf1:
-      match:
-        name: ens1f0v0
       link: eth0
       dhcp4: no
       dhcp6: no
     vf2:
-      match:
-        name: ens1f0v1
       link: eth0
       dhcp4: no
       dhcp6: no
     vf3:
-      match:
-        name: ens1f1v0
       link: eth1
       dhcp4: no
       dhcp6: no
     vf4:
-      match:
-        name: ens1f1v1
       link: eth1
       dhcp4: no
       dhcp6: no
     vf5:
-      match:
-        name: ens1f2v0
       link: eth2
       dhcp4: no
       dhcp6: no
     vf6:
-      match:
-        name: ens1f2v1
       link: eth2
       dhcp4: no
       dhcp6: no
     vf7:
-      match:
-        name: ens1f3v0
       link: eth3
       dhcp4: no
       dhcp6: no
     vf8:
-      match:
-        name: ens1f3v1
       link: eth3
       dhcp4: no
       dhcp6: no
@@ -128,24 +112,3 @@ network:
           via: __PRIVATE_NEXT_HOP__
         - to: 166.8.0.0/14
           via: __PRIVATE_NEXT_HOP__
-#
-#  Bridge implementation for BIG-IP virtual addition testing
-#
-#  Changes here will require changes to the libvirt domain XML to match
-#
-    eth0vf0:
-      interfaces: [vf1]
-    eth0vf1:
-      interfaces: [vf2]
-    eth1vf0:
-      interfaces: [vf3]
-    eth1vf1:
-      interfaces: [vf4]
-    eth2vf0:
-      interfaces: [vf5]
-    eth2vf1:
-      interfaces: [vf6]
-    eth3vf0:
-      interfaces: [vf7]
-    eth3vf1:
-      interfaces: [vf8]

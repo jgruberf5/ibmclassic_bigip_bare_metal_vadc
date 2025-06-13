@@ -193,19 +193,92 @@ write_files:
           defined=$(virsh list --all | grep $BIGIP_VM_NAME | wc -l)
           if [ "$defined" -ne "1" ]; then    
               echo "Creating libvirt domain XML for BIG-IP virtual edition"
-              BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
-              BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
+              lshw -class network -json > network_hardware.json
+              ETH0VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["logicalname"])')
+              ETH0VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH0VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f2)
+              ETH0VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH0VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH0VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["logicalname"])')
+              ETH0VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH0VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f2)
+              ETH0VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH0VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH1VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["logicalname"])')
+              ETH1VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH1VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f2)
+              ETH1VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH1VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH1VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["logicalname"])')
+              ETH1VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH1VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f2)
+              ETH1VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH1VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH2VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["logicalname"])')
+              ETH2VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH2VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f2)
+              ETH2VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH2VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH2VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["logicalname"])')
+              ETH2VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH2VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f2)
+              ETH2VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH2VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH3VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["logicalname"])')
+              ETH3VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH3VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f2)
+              ETH3VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH3VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH3VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["logicalname"])')
+              ETH3VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH3VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f2)
+              ETH3VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH3VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              BIGIP_DOMAIN_HOSTDEV_TEMPLATE="$script_dir/BIGIPDomainHOSTDEVTemplate.xml"
+              BIGIP_DOMAIN_MACVTAP_TEMPLATE="$script_dir/BIGIPDomainMACVTAPTemplate.xml"
+              BIGIP_DOMAIN_HOSTDEV="$script_dir/BIGIPDomainHOSTDEV.xml"
+              BIGIP_DOMAIN_MACVTAP="$script_dir/BIGIPDomainMACVTAP.xml"
               BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
               BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
               [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY="4194304"  
               [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS="2"   
-              cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
-              sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
-              sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN
-              sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN
-              sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
-              sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
-              virsh define $BIGIP_DOMAIN
+              cp $BIGIP_DOMAIN_HOSTDEV_TEMPLATE $BIGIP_DOMAIN_HOSTDEV
+              cp $BIGIP_DOMAIN_MACVTAP_TEMPLATE $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_HOSTDEV
+              sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_MACVTAP
+              sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_HOSTDEV
+              sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH0VF1NAME__|'${ETH0VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH0VF2NAME__|'${ETH0VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH1VF1NAME__|'${ETH1VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH1VF2NAME__|'${ETH1VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH2VF1NAME__|'${ETH2VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH2VF2NAME__|'${ETH2VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH3VF1NAME__|'${ETH3VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH3VF2NAME__|'${ETH3VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH0VF1PCIDOMAIN__|'${ETH0VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF1PCIBUS__|'${ETH0VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF1PCISLOT__|'${ETH0VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF1PCIFUNC__|'${ETH0VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF1PCIDOMAIN__|'${ETH1VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF1PCIBUS__|'${ETH1VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF1PCISLOT__|'${ETH1VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF1PCIFUNC__|'${ETH1VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF1PCIDOMAIN__|'${ETH2VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF1PCIBUS__|'${ETH2VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF1PCISLOT__|'${ETH2VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF1PCIFUNC__|'${ETH2VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF1PCIDOMAIN__|'${ETH3VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF1PCIBUS__|'${ETH3VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF1PCISLOT__|'${ETH3VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF1PCIFUNC__|'${ETH3VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              virsh define $BIGIP_DOMAIN_MACVTAP
           fi
       }
       
@@ -425,7 +498,7 @@ write_files:
         exit 1
       fi
       
-  - path: /opt/F5Networks/onboarding/BIGIPDomainTemplate.xml
+  - path: /opt/F5Networks/onboarding/BIGIPDomainHOSTDEVTemplate.xml
     permissions: 0644
     content: |
       <domain type="kvm">
@@ -490,149 +563,179 @@ write_files:
               <source bridge="br0"/>
               <model type="virtio"/>
             </interface>
-            <!--
-            Use: lshw -class network -businfo   
-            to get the PCI addresses of the devices.
-      
-            Remember these are wired in order eth0vf0, then eth2vf0
-      
-            so the bridge interface you are replace for:
-      
-            eth0vf0 = ens1f0v0
-            eth2vf0 = ens1f2v0
-      
-            Hardware addressing for IBM Bare Metal instances - PCI addresses are hardcoded and 
-            not templated
-      
-            Assure the Intel SR-IOV NIC is in the same bus and slot for all deployments
-      
-            lshw -class network -businfo
-            Bus info          Device           Class          Description
-            =============================================================
-            pci@0000:06:00.0  eth0             network        Ethernet Controller X710/X557-AT 10GBASE-T
-            pci@0000:06:00.1  eth1             network        Ethernet Controller X710/X557-AT 10GBASE-T
-            pci@0000:06:00.2  eth2             network        Ethernet Controller X710/X557-AT 10GBASE-T
-            pci@0000:06:00.3  eth3             network        Ethernet Controller X710/X557-AT 10GBASE-T
-            pci@0000:06:02.0  ens1f0v0         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:02.1  ens1f0v1         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:06.0  ens1f1v0         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:06.1  ens1f1v1         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:0a.0  ens1f2v0         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:0a.1  ens1f2v1         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:0e.0  ens1f3v0         network        Ethernet Virtual Function 700 Series
-            pci@0000:06:0e.1  ens1f3v1         network        Ethernet Virtual Function 700 Series
-      
-            -->
             <!-- PCI Passthrough for VF ens1f0v0  pci@0000:06:02.0 -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x0'/>
+                <address type='pci' domain='0x__ETH0VF1PCIDOMAIN__' bus='0x__ETH0VF1PCIBUS__' slot='0x__ETH0VF1PCISLOT__' function='0x__ETH0VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth0vf0"/>
-              <model type="virtio"/>
-            </interface>
             <!-- PCI Passthrough for VF pci@0000:06:0a.0  ens1f2v0  -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x0'/>
+                <address type='pci' domain='0x__ETH2VF1PCIDOMAIN__' bus='0x__ETH2VF1PCIBUS__' slot='0x__ETH2VF1PCISLOT__' function='0x__ETH2VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth2vf0"/>
-              <model type="virtio"/>
-            </interface>
             <!-- PCI Passthrough for VF pci@0000:06:06.0 ens1f1v0 -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x0'/>
+                <address type='pci' domain='0x__ETH1VF1PCIDOMAIN__' bus='0x__ETH1VF1PCIBUS__' slot='0x__ETH1VF1PCISLOT__' function='0x__ETH1VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
             </interface>
-            -->
-            <!--bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth1vf0"/>
-              <model type="virtio"/>
-            </interface>
             <!-- PCI Passthrough for VF pci@0000:06:0e.0  ens1f3v0   -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x0'/>
+                <address type='pci' domain='0x__ETH3VF1PCIDOMAIN__' bus='0x__ETH3VF1PCIBUS__' slot='0x__ETH3VF1PCISLOT__' function='0x__ETH3VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth3vf0"/>
-              <model type="virtio"/>
-            </interface>
             <!-- PCI Passthrough for VF ppci@0000:06:02.1  ens1f0v1   -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x02' function='0x1'/>
+                <address type='pci' domain='0x__ETH0VF2PCIDOMAIN__' bus='0x__ETH0VF2PCIBUS__' slot='0x__ETH0VF2PCISLOT__' function='0x__ETH0VF2PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth0vf1"/>
-              <model type="virtio"/>
-            </interface>
             <!--  PCI Passthrough for VF pci@0000:06:0a.1  ens1f2v1   -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x0a' function='0x1'/>
+                <address type='pci' domain='0x__ETH2VF2PCIDOMAIN__' bus='0x__ETH2VF2PCIBUS__' slot='0x__ETH2VF2PCISLOT__' function='0x__ETH2VF2PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth2vf1"/>
-              <model type="virtio"/>
-            </interface>
             <!--  PCI Passthrough for VF pci@0000:06:06.1  ens1f1v1   -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x06' function='0x1'/>
+                <address type='pci' domain='0x__ETH1VF2PCIDOMAIN__' bus='0x__ETH1VF2PCIBUS__' slot='0x__ETH1VF2PCISLOT__' function='0x__ETH1VF2PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0d' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
-            <interface type="bridge">
-              <source bridge="eth1vf1"/>
-              <model type="virtio"/>
-            </interface>
             <!-- PCI Passthrough for VF pci@0000:06:0e.1  ens1f3v1   -->
-            <!--
             <interface type='hostdev' managed='yes'>
             <source>
-                <address type='pci' domain='0x0000' bus='0x6' slot='0x0e' function='0x1'/>
+                <address type='pci' domain='0x__ETH3VF2PCIDOMAIN__' bus='0x__ETH3VF2PCIBUS__' slot='0x__ETH3VF2PCISLOT__' function='0x__ETH3VF2PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x0e' function='0x0'/>
             </interface>
-            -->
-            <!-- bridge implementation for test -->
+            <console type="pty"/>
+            <channel type="unix">
+              <source mode="bind"/>
+              <target type="virtio" name="org.qemu.guest_agent.0"/>
+            </channel>
+            <channel type="spicevmc">
+              <target type="virtio" name="com.redhat.spice.0"/>
+            </channel>
+            <input type="tablet" bus="usb"/>
+            <graphics type="spice" port="-1" tlsPort="-1" autoport="yes"/>
+            <sound model="ich9"/>
+            <video>
+              <model type="virtio"/>
+            </video>
+            <redirdev bus="usb" type="spicevmc"/>
+            <redirdev bus="usb" type="spicevmc"/>
+            <memballoon model="virtio"/>
+            <rng model="virtio">
+              <backend model="random">/dev/urandom</backend>
+            </rng>
+          </devices>
+      </domain>
+  - path: /opt/F5Networks/onboarding/BIGIPDomainMACVTAPTemplate.xml
+    permissions: 0644
+    content: |
+      <domain type="kvm">
+          <name>__BIGIP_VM_NAME__</name>
+          <metadata>
+            <libosinfo:libosinfo xmlns:libosinfo="http://libosinfo.org/xmlns/libvirt/domain/1.0">
+              <libosinfo:os id="http://libosinfo.org/linux/2022"/>
+            </libosinfo:libosinfo>
+          </metadata>
+          <memory>__BIGIP_VM_MEMORY__</memory>
+          <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
+          <vcpu>__BIGIP_VM_VCPUS__</vcpu>
+          <os>
+            <type arch="x86_64" machine="q35">hvm</type>
+            <boot dev="hd"/>
+          </os>
+          <features>
+            <acpi/>
+            <apic/>
+            <vmport state="off"/>
+          </features>
+          <cpu mode="host-model"/>
+          <clock offset="utc">
+            <timer name="rtc" tickpolicy="catchup"/>
+            <timer name="pit" tickpolicy="delay"/>
+            <timer name="hpet" present="no"/>
+          </clock>
+          <pm>
+            <suspend-to-mem enabled="no"/>
+            <suspend-to-disk enabled="no"/>
+          </pm>
+          <devices>
+            <emulator>/usr/bin/qemu-system-x86_64</emulator>
+            <disk type="file" device="disk">
+              <driver name="qemu" type="qcow2"/>
+              <source file="__BIGIP_IMAGE_FILE__"/>
+              <target dev="vda" bus="virtio"/>
+            </disk>
+            <disk type="file" device="cdrom">
+              <driver name="qemu" type="raw"/>
+              <source file="__BIGIP_CLOUDINIT_ISO__"/>
+              <target dev="sda" bus="sata"/>
+              <readonly/>
+            </disk>
+            <controller type="usb" model="qemu-xhci" ports="15"/>
+            <controller type="pci" model="pcie-root"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
+            <controller type="pci" model="pcie-root-port"/>
             <interface type="bridge">
-              <source bridge="eth3vf1"/>
+              <source bridge="br0"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH0VF1NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH2VF1NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH1VF1NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH3VF1NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH0VF2NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH2VF2NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH1VF2NAME__" mode="bridge"/>
+              <model type="virtio"/>
+            </interface>
+            <interface type="direct">
+              <source dev="__ETH3VF2NAME__" mode="bridge"/>
               <model type="virtio"/>
             </interface>
             <console type="pty"/>
@@ -697,50 +800,34 @@ write_files:
                 - __DNS_2__
             virtual-function-count: 2
           vf1:
-            match:
-              name: ens1f0v0
             link: eth0
             dhcp4: no
             dhcp6: no
           vf2:
-            match:
-              name: ens1f0v1
             link: eth0
             dhcp4: no
             dhcp6: no
           vf3:
-            match:
-              name: ens1f1v0
             link: eth1
             dhcp4: no
             dhcp6: no
           vf4:
-            match:
-              name: ens1f1v1
             link: eth1
             dhcp4: no
             dhcp6: no
           vf5:
-            match:
-              name: ens1f2v0
             link: eth2
             dhcp4: no
             dhcp6: no
           vf6:
-            match:
-              name: ens1f2v1
             link: eth2
             dhcp4: no
             dhcp6: no
           vf7:
-            match:
-              name: ens1f3v0
             link: eth3
             dhcp4: no
             dhcp6: no
           vf8:
-            match:
-              name: ens1f3v1
             link: eth3
             dhcp4: no
             dhcp6: no
@@ -790,27 +877,6 @@ write_files:
                 via: __PRIVATE_NEXT_HOP__
               - to: 166.8.0.0/14
                 via: __PRIVATE_NEXT_HOP__
-      #
-      #  Bridge implementation for BIG-IP virtual addition testing
-      #
-      #  Changes here will require changes to the libvirt domain XML to match
-      #
-          eth0vf0:
-            interfaces: [vf1]
-          eth0vf1:
-            interfaces: [vf2]
-          eth1vf0:
-            interfaces: [vf3]
-          eth1vf1:
-            interfaces: [vf4]
-          eth2vf0:
-            interfaces: [vf5]
-          eth2vf1:
-            interfaces: [vf6]
-          eth3vf0:
-            interfaces: [vf7]
-          eth3vf1:
-            interfaces: [vf8]
   - path: /opt/F5Networks/onboarding/BIGIPUserDataTemplate.yaml
     permissions: 0644
     content: |

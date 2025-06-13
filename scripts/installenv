@@ -174,19 +174,92 @@ function create_bigip_domain_xml {
     defined=$(virsh list --all | grep $BIGIP_VM_NAME | wc -l)
     if [ "$defined" -ne "1" ]; then    
         echo "Creating libvirt domain XML for BIG-IP virtual edition"
-        BIGIP_DOMAIN_TEMPLATE="$script_dir/BIGIPDomainTemplate.xml"
-        BIGIP_DOMAIN="$script_dir/BIGIPDomain.xml"
+        lshw -class network -json > network_hardware.json
+        ETH0VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["logicalname"])')
+        ETH0VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH0VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f2)
+        ETH0VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH0VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH0VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["logicalname"])')
+        ETH0VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH0VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f2)
+        ETH0VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH0VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH1VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["logicalname"])')
+        ETH1VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH1VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f2)
+        ETH1VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH1VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH1VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["logicalname"])')
+        ETH1VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH1VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f2)
+        ETH1VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH1VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH2VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["logicalname"])')
+        ETH2VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH2VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f2)
+        ETH2VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH2VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH2VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["logicalname"])')
+        ETH2VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH2VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f2)
+        ETH2VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH2VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH3VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["logicalname"])')
+        ETH3VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH3VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f2)
+        ETH3VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH3VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        ETH3VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["logicalname"])')
+        ETH3VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+        ETH3VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f2)
+        ETH3VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+        ETH3VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+        BIGIP_DOMAIN_HOSTDEV_TEMPLATE="$script_dir/BIGIPDomainHOSTDEVTemplate.xml"
+        BIGIP_DOMAIN_MACVTAP_TEMPLATE="$script_dir/BIGIPDomainMACVTAPTemplate.xml"
+        BIGIP_DOMAIN_HOSTDEV="$script_dir/BIGIPDomainHOSTDEV.xml"
+        BIGIP_DOMAIN_MACVTAP="$script_dir/BIGIPDomainMACVTAP.xml"
         BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
         BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
         [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY="4194304"  
         [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS="2"   
-        cp $BIGIP_DOMAIN_TEMPLATE $BIGIP_DOMAIN
-        sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN
-        sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN
-        sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN
-        sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN
-        sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN
-        virsh define $BIGIP_DOMAIN
+        cp $BIGIP_DOMAIN_HOSTDEV_TEMPLATE $BIGIP_DOMAIN_HOSTDEV
+        cp $BIGIP_DOMAIN_MACVTAP_TEMPLATE $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_HOSTDEV
+        sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_MACVTAP
+        sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_HOSTDEV
+        sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__BIGIP_CLOUDINIT_ISO__|'${BIGIP_CLOUDINIT_ISO}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH0VF1NAME__|'${ETH0VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH0VF2NAME__|'${ETH0VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH1VF1NAME__|'${ETH1VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH1VF2NAME__|'${ETH1VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH2VF1NAME__|'${ETH2VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH2VF2NAME__|'${ETH2VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH3VF1NAME__|'${ETH3VF1NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH3VF2NAME__|'${ETH3VF2NAME}'|g' $BIGIP_DOMAIN_MACVTAP
+        sed -i 's|__ETH0VF1PCIDOMAIN__|'${ETH0VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH0VF1PCIBUS__|'${ETH0VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH0VF1PCISLOT__|'${ETH0VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH0VF1PCIFUNC__|'${ETH0VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH1VF1PCIDOMAIN__|'${ETH1VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH1VF1PCIBUS__|'${ETH1VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH1VF1PCISLOT__|'${ETH1VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH1VF1PCIFUNC__|'${ETH1VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH2VF1PCIDOMAIN__|'${ETH2VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH2VF1PCIBUS__|'${ETH2VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH2VF1PCISLOT__|'${ETH2VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH2VF1PCIFUNC__|'${ETH2VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH3VF1PCIDOMAIN__|'${ETH3VF1PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH3VF1PCIBUS__|'${ETH3VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH3VF1PCISLOT__|'${ETH3VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+        sed -i 's|__ETH3VF1PCIFUNC__|'${ETH3VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+        virsh define $BIGIP_DOMAIN_MACVTAP
     fi
 }
 
