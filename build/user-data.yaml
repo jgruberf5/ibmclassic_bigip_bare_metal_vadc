@@ -916,12 +916,12 @@ write_files:
         ip: __BIGIP_MANAGEMENT_IP__
         gw: __BIGIP_MANAGEMENT_NEXT_HOP__
         mtu: __BIGIP_MANAGEMENT_MTU__
-        post_onboard_enabled: true
-        post_onboard_commands:
-          - tmsh create net trunk slPrivate interfaces replace-all-with { 1.1 1.2 }
-          - tmsh create net trunk slPublic interfaces replace-all-with { 1.3 1.4 }
-          - tmsh create net trunk customerPrivate interfaces replace-all-with { 1.5 1.6 }
-          - tmsh create net trunk customerPublic interfaces replace-all-with { 1.7 1.8 }
+        # post_onboard_enabled: true
+        # post_onboard_commands:
+        #  - tmsh create net trunk slPrivate interfaces replace-all-with { 1.1 1.2 }
+        #  - tmsh create net trunk slPublic interfaces replace-all-with { 1.3 1.4 }
+        #  - tmsh create net trunk customerPrivate interfaces replace-all-with { 1.5 1.6 }
+        #  - tmsh create net trunk customerPublic interfaces replace-all-with { 1.7 1.8 }
       tmos_declared:
         enabled: true
         icontrollx_trusted_sources: false
@@ -936,6 +936,9 @@ write_files:
               class: System
               hostname: __BIGIP_HOSTNAME__
               autoPhonehome: false
+            mgmtIp:
+              class: ManagementIp
+              address: __BIGIP_MANAGEMENT_IP__
             provisioningLevels:
               class: Provision
               ltm: nominal
@@ -944,24 +947,23 @@ write_files:
               nameServers:
                 - __DNS_1__
                 - __DNS_2__
-            slPrivate:
-              class: Trunk
-              interfaces:
-                - "1.1"
-                - "1.2"
-            slPublic:
-              class: Trunk
-              interfaces:
-                - "1.3"
-                - "1.4"
-            customerPrivate:
-              class: Trunk
-              interfaces:
-                - "1.5"
-                - "1.6"
-            customerPublic:
-              class: Trunk
-              interfaces:
-                - "1.7"
-                - "1.8"
+      #      slPrivate:
+      #        class: Trunk
+      #        interfaces:
+      #          - "1.1"
+      #          - "1.2"
+      #      slPublic:
+      #        class: Trunk
+      #        interfaces:
+      #          - "1.3"
+      #          - "1.4"
+      #      customerPrivate:
+      #        class: Trunk
+      #        interfaces:
+      #          - "1.5"
+      #          - "1.6"
+      #      customerPublic:
+      #        class: Trunk
+      #        interfaces:
+      #          - "1.7"
 runcmd: [nohup sh -c '/opt/F5Networks/onboarding/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]
