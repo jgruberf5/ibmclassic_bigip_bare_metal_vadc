@@ -275,7 +275,13 @@ function create_bigip_domain_xml {
         sed -i 's|__ETH3VF2PCIBUS__|'${ETH3VF2PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
         sed -i 's|__ETH3VF2PCISLOT__|'${ETH3VF2PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
         sed -i 's|__ETH3VF2PCIFUNC__|'${ETH3VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
-        virsh define $BIGIP_DOMAIN_MACVTAP
+        iommu_enabled=$(grep iommu /etc/default/grub | wc -l)
+        if [ "$iommu_enabled" -ne "1" ]; then
+          sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=11-31,43-63 nohz_full=11-31,43-63 rcu_nocbs=11-31,43-63 nosmt"/g' /etc/default/grub
+          /usr/sbin/update-grub
+          reboot
+        fi
+        virsh define $BIGIP_DOMAIN_HOSTDEV
     fi
 }
 

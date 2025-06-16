@@ -278,7 +278,29 @@ write_files:
               sed -i 's|__ETH3VF1PCIBUS__|'${ETH3VF1PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
               sed -i 's|__ETH3VF1PCISLOT__|'${ETH3VF1PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
               sed -i 's|__ETH3VF1PCIFUNC__|'${ETH3VF1PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
-              virsh define $BIGIP_DOMAIN_MACVTAP
+              sed -i 's|__ETH0VF2PCIDOMAIN__|'${ETH0VF2PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF2PCIBUS__|'${ETH0VF2PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF2PCISLOT__|'${ETH0VF2PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH0VF2PCIFUNC__|'${ETH0VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF2PCIDOMAIN__|'${ETH1VF2PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF2PCIBUS__|'${ETH1VF2PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF2PCISLOT__|'${ETH1VF2PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH1VF2PCIFUNC__|'${ETH1VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF2PCIDOMAIN__|'${ETH2VF2PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF2PCIBUS__|'${ETH2VF2PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF2PCISLOT__|'${ETH2VF2PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH2VF2PCIFUNC__|'${ETH2VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF2PCIDOMAIN__|'${ETH3VF2PCIDOMAIN}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF2PCIBUS__|'${ETH3VF2PCIBUS}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF2PCISLOT__|'${ETH3VF2PCISLOT}'|g' $BIGIP_DOMAIN_HOSTDEV
+              sed -i 's|__ETH3VF2PCIFUNC__|'${ETH3VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
+              iommu_enabled=$(grep iommu /etc/default/grub | wc -l)
+              if [ "$iommu_enabled" -ne "1" ]; then
+                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=11-31,43-63 nohz_full=11-31,43-63 rcu_nocbs=11-31,43-63 nosmt"/g' /etc/default/grub
+                /usr/sbin/update-grub
+                reboot
+              fi
+              virsh define $BIGIP_DOMAIN_HOSTDEV
           fi
       }
       
