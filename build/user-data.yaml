@@ -199,41 +199,21 @@ write_files:
               ETH0VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f2)
               ETH0VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
               ETH0VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[4]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH0VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["logicalname"])')
-              ETH0VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH0VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f2)
-              ETH0VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH0VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH1VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["logicalname"])')
-              ETH1VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH1VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f2)
-              ETH1VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH1VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH1VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["logicalname"])')
-              ETH1VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH1VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f2)
-              ETH1VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH1VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH2VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["logicalname"])')
-              ETH2VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH2VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f2)
-              ETH2VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH2VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[8]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH2VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["logicalname"])')
-              ETH2VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH2VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f2)
-              ETH2VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH2VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[9]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH3VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["logicalname"])')
-              ETH3VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH3VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f2)
-              ETH3VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH3VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[10]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
-              ETH3VF2NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["logicalname"])')
-              ETH3VF2PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
-              ETH3VF2PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f2)
-              ETH3VF2PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
-              ETH3VF2PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[11]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH1VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["logicalname"])')
+              ETH1VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH1VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f2)
+              ETH1VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH1VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[5]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH2VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["logicalname"])')
+              ETH2VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH2VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f2)
+              ETH2VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH2VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[6]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
+              ETH3VF1NAME=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["logicalname"])')
+              ETH3VF1PCIDOMAIN=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f1 | cut -d'@' -f2)
+              ETH3VF1PCIBUS=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f2)
+              ETH3VF1PCISLOT=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f1)
+              ETH3VF1PCIFUNC=$(cat network_hardware.json | python3 -c 'import sys, json ; j = json.load(sys.stdin) ; print(j[7]["businfo"])' | cut -d':' -f3 | cut -d'.' -f2)
               BIGIP_DOMAIN_HOSTDEV_TEMPLATE="$script_dir/BIGIPDomainHOSTDEVTemplate.xml"
               BIGIP_DOMAIN_MACVTAP_TEMPLATE="$script_dir/BIGIPDomainMACVTAPTemplate.xml"
               BIGIP_DOMAIN_HOSTDEV="$script_dir/BIGIPDomainHOSTDEV.xml"
@@ -585,61 +565,33 @@ write_files:
               <source bridge="br0"/>
               <model type="virtio"/>
             </interface>
-            <!-- PCI Passthrough for VF ens1f0v0  pci@0000:06:02.0 -->
+            <!-- PCI Passthrough for VF eth0vf0  pci@__ETH0VF1PCIDOMAIN__:__ETH0VF1PCIBUF__:__ETH0VF1PCISLOT__.__ETH0VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x__ETH0VF1PCIDOMAIN__' bus='0x__ETH0VF1PCIBUS__' slot='0x__ETH0VF1PCISLOT__' function='0x__ETH0VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
             </interface>
-            <!-- PCI Passthrough for VF pci@0000:06:0a.0  ens1f2v0  -->
+            <!-- PCI Passthrough for VF eth1vf0  pci@__ETH1VF1PCIDOMAIN__:__ETH1VF1PCIBUF__:__ETH1VF1PCISLOT__.__ETH1VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x__ETH2VF1PCIDOMAIN__' bus='0x__ETH2VF1PCIBUS__' slot='0x__ETH2VF1PCISLOT__' function='0x__ETH2VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
             </interface>
-            <!-- PCI Passthrough for VF pci@0000:06:06.0 ens1f1v0 -->
+            <!-- PCI Passthrough for VF eth2vf0  pci@__ETH2VF1PCIDOMAIN__:__ETH2VF1PCIBUF__:__ETH2VF1PCISLOT__.__ETH2VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x__ETH1VF1PCIDOMAIN__' bus='0x__ETH1VF1PCIBUS__' slot='0x__ETH1VF1PCISLOT__' function='0x__ETH1VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
             </interface>
-            <!-- PCI Passthrough for VF pci@0000:06:0e.0  ens1f3v0   -->
+            <!-- PCI Passthrough for VF eth3vf0  pci@__ETH0VF3PCIDOMAIN__:__ETH0VF3PCIBUF__:__ETH0VF3PCISLOT__.__ETH0VF3PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
             <source>
                 <address type='pci' domain='0x__ETH3VF1PCIDOMAIN__' bus='0x__ETH3VF1PCIBUS__' slot='0x__ETH3VF1PCISLOT__' function='0x__ETH3VF1PCIFUNC__'/>
             </source>
             <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
-            </interface>
-            <!-- PCI Passthrough for VF ppci@0000:06:02.1  ens1f0v1   -->
-            <interface type='hostdev' managed='yes'>
-            <source>
-                <address type='pci' domain='0x__ETH0VF2PCIDOMAIN__' bus='0x__ETH0VF2PCIBUS__' slot='0x__ETH0VF2PCISLOT__' function='0x__ETH0VF2PCIFUNC__'/>
-            </source>
-            <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
-            </interface>
-            <!--  PCI Passthrough for VF pci@0000:06:0a.1  ens1f2v1   -->
-            <interface type='hostdev' managed='yes'>
-            <source>
-                <address type='pci' domain='0x__ETH2VF2PCIDOMAIN__' bus='0x__ETH2VF2PCIBUS__' slot='0x__ETH2VF2PCISLOT__' function='0x__ETH2VF2PCIFUNC__'/>
-            </source>
-            <address type='pci' domain='0x0000' bus='0x00' slot='0x0a' function='0x0'/>
-            </interface>
-            <!--  PCI Passthrough for VF pci@0000:06:06.1  ens1f1v1   -->
-            <interface type='hostdev' managed='yes'>
-            <source>
-                <address type='pci' domain='0x__ETH1VF2PCIDOMAIN__' bus='0x__ETH1VF2PCIBUS__' slot='0x__ETH1VF2PCISLOT__' function='0x__ETH1VF2PCIFUNC__'/>
-            </source>
-            <address type='pci' domain='0x0000' bus='0x00' slot='0x0d' function='0x0'/>
-            </interface>
-            <!-- PCI Passthrough for VF pci@0000:06:0e.1  ens1f3v1   -->
-            <interface type='hostdev' managed='yes'>
-            <source>
-                <address type='pci' domain='0x__ETH3VF2PCIDOMAIN__' bus='0x__ETH3VF2PCIBUS__' slot='0x__ETH3VF2PCISLOT__' function='0x__ETH3VF2PCIFUNC__'/>
-            </source>
-            <address type='pci' domain='0x0000' bus='0x00' slot='0x0e' function='0x0'/>
             </interface>
             <console type="pty"/>
             <channel type="unix">
@@ -744,22 +696,6 @@ write_files:
               <source dev="__ETH3VF1NAME__" mode="bridge"/>
               <model type="virtio"/>
             </interface>
-            <interface type="direct">
-              <source dev="__ETH0VF2NAME__" mode="bridge"/>
-              <model type="virtio"/>
-            </interface>
-            <interface type="direct">
-              <source dev="__ETH2VF2NAME__" mode="bridge"/>
-              <model type="virtio"/>
-            </interface>
-            <interface type="direct">
-              <source dev="__ETH1VF2NAME__" mode="bridge"/>
-              <model type="virtio"/>
-            </interface>
-            <interface type="direct">
-              <source dev="__ETH3VF2NAME__" mode="bridge"/>
-              <model type="virtio"/>
-            </interface>
             <console type="pty"/>
             <channel type="unix">
               <source mode="bind"/>
@@ -796,7 +732,7 @@ write_files:
               addresses:
                 - __DNS_1__
                 - __DNS_2__
-            virtual-function-count: 2
+            virtual-function-count: 1
           eth1:
             dhcp4: no
             dhcp6: no
@@ -804,7 +740,7 @@ write_files:
               addresses:
                 - __DNS_1__
                 - __DNS_2__
-            virtual-function-count: 2
+            virtual-function-count: 1
           eth2:
             dhcp4: no
             dhcp6: no
@@ -812,7 +748,7 @@ write_files:
               addresses:
                 - __DNS_1__
                 - __DNS_2__
-            virtual-function-count: 2
+            virtual-function-count: 1
           eth3:
             dhcp4: no
             dhcp6: no
@@ -820,37 +756,21 @@ write_files:
               addresses:
                 - __DNS_1__
                 - __DNS_2__
-            virtual-function-count: 2
+            virtual-function-count: 1
           vf1:
             link: eth0
             dhcp4: no
             dhcp6: no
           vf2:
-            link: eth0
+            link: eth1
             dhcp4: no
             dhcp6: no
           vf3:
-            link: eth1
+            link: eth3
             dhcp4: no
             dhcp6: no
           vf4:
-            link: eth1
-            dhcp4: no
-            dhcp6: no
-          vf5:
-            link: eth2
-            dhcp4: no
-            dhcp6: no
-          vf6:
-            link: eth2
-            dhcp4: no
-            dhcp6: no
-          vf7:
-            link: eth3
-            dhcp4: no
-            dhcp6: no
-          vf8:
-            link: eth3
+            link: eth4
             dhcp4: no
             dhcp6: no
         bonds:

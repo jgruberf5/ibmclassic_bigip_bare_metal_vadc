@@ -76,22 +76,6 @@
         <source dev="__ETH3VF1NAME__" mode="bridge"/>
         <model type="virtio"/>
       </interface>
-      <interface type="direct">
-        <source dev="__ETH0VF2NAME__" mode="bridge"/>
-        <model type="virtio"/>
-      </interface>
-      <interface type="direct">
-        <source dev="__ETH2VF2NAME__" mode="bridge"/>
-        <model type="virtio"/>
-      </interface>
-      <interface type="direct">
-        <source dev="__ETH1VF2NAME__" mode="bridge"/>
-        <model type="virtio"/>
-      </interface>
-      <interface type="direct">
-        <source dev="__ETH3VF2NAME__" mode="bridge"/>
-        <model type="virtio"/>
-      </interface>
       <console type="pty"/>
       <channel type="unix">
         <source mode="bind"/>

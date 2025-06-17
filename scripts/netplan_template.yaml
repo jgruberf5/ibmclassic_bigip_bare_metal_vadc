@@ -9,7 +9,7 @@ network:
         addresses:
           - __DNS_1__
           - __DNS_2__
-      virtual-function-count: 2
+      virtual-function-count: 1
     eth1:
       dhcp4: no
       dhcp6: no
@@ -17,7 +17,7 @@ network:
         addresses:
           - __DNS_1__
           - __DNS_2__
-      virtual-function-count: 2
+      virtual-function-count: 1
     eth2:
       dhcp4: no
       dhcp6: no
@@ -25,7 +25,7 @@ network:
         addresses:
           - __DNS_1__
           - __DNS_2__
-      virtual-function-count: 2
+      virtual-function-count: 1
     eth3:
       dhcp4: no
       dhcp6: no
@@ -33,37 +33,21 @@ network:
         addresses:
           - __DNS_1__
           - __DNS_2__
-      virtual-function-count: 2
+      virtual-function-count: 1
     vf1:
       link: eth0
       dhcp4: no
       dhcp6: no
     vf2:
-      link: eth0
+      link: eth1
       dhcp4: no
       dhcp6: no
     vf3:
-      link: eth1
+      link: eth3
       dhcp4: no
       dhcp6: no
     vf4:
-      link: eth1
-      dhcp4: no
-      dhcp6: no
-    vf5:
-      link: eth2
-      dhcp4: no
-      dhcp6: no
-    vf6:
-      link: eth2
-      dhcp4: no
-      dhcp6: no
-    vf7:
-      link: eth3
-      dhcp4: no
-      dhcp6: no
-    vf8:
-      link: eth3
+      link: eth4
       dhcp4: no
       dhcp6: no
   bonds:
