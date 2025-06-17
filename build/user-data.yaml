@@ -276,8 +276,7 @@ write_files:
               sed -i 's|__ETH3VF2PCIFUNC__|'${ETH3VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
               iommu_enabled=$(grep iommu /etc/default/grub | wc -l)
               if [ "$iommu_enabled" -ne "1" ]; then
-                # sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-9 nohz_full=6-9 rcu_nocbs=6-9 nosmt"/g' /etc/default/grub
-                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt"/g' /etc/default/grub
+                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-9 nohz_full=6-9 rcu_nocbs=6-9 nosmt"/g' /etc/default/grub
                 /usr/sbin/update-grub
                 reboot
               fi
