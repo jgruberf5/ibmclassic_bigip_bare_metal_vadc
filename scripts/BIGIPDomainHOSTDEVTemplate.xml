@@ -61,34 +61,35 @@
       <interface type="bridge">
         <source bridge="br0"/>
         <model type="virtio"/>
+        <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
       </interface>
       <!-- PCI Passthrough for VF eth0vf0  pci@__ETH0VF1PCIDOMAIN__:__ETH0VF1PCIBUF__:__ETH0VF1PCISLOT__.__ETH0VF1PCIFUNC__ -->
       <interface type='hostdev' managed='yes'>
-      <source>
+        <source>
           <address type='pci' domain='0x__ETH0VF1PCIDOMAIN__' bus='0x__ETH0VF1PCIBUS__' slot='0x__ETH0VF1PCISLOT__' function='0x__ETH0VF1PCIFUNC__'/>
-      </source>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+        </source>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
       </interface>
       <!-- PCI Passthrough for VF eth1vf0  pci@__ETH1VF1PCIDOMAIN__:__ETH1VF1PCIBUF__:__ETH1VF1PCISLOT__.__ETH1VF1PCIFUNC__ -->
       <interface type='hostdev' managed='yes'>
-      <source>
+        <source>
           <address type='pci' domain='0x__ETH2VF1PCIDOMAIN__' bus='0x__ETH2VF1PCIBUS__' slot='0x__ETH2VF1PCISLOT__' function='0x__ETH2VF1PCIFUNC__'/>
-      </source>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+        </source>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
       </interface>
       <!-- PCI Passthrough for VF eth2vf0  pci@__ETH2VF1PCIDOMAIN__:__ETH2VF1PCIBUF__:__ETH2VF1PCISLOT__.__ETH2VF1PCIFUNC__ -->
       <interface type='hostdev' managed='yes'>
-      <source>
+        <source>
           <address type='pci' domain='0x__ETH1VF1PCIDOMAIN__' bus='0x__ETH1VF1PCIBUS__' slot='0x__ETH1VF1PCISLOT__' function='0x__ETH1VF1PCIFUNC__'/>
-      </source>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+        </source>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
       </interface>
       <!-- PCI Passthrough for VF eth3vf0  pci@__ETH0VF3PCIDOMAIN__:__ETH0VF3PCIBUF__:__ETH0VF3PCISLOT__.__ETH0VF3PCIFUNC__ -->
       <interface type='hostdev' managed='yes'>
-      <source>
+        <source>
           <address type='pci' domain='0x__ETH3VF1PCIDOMAIN__' bus='0x__ETH3VF1PCIBUS__' slot='0x__ETH3VF1PCISLOT__' function='0x__ETH3VF1PCIFUNC__'/>
-      </source>
-      <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+        </source>
+        <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
       </interface>
       <console type="pty"/>
       <channel type="unix">
