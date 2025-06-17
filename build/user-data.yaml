@@ -220,8 +220,8 @@ write_files:
               BIGIP_DOMAIN_MACVTAP="$script_dir/BIGIPDomainMACVTAP.xml"
               BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
               BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
-              [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY="4194304"  
-              [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS="2"   
+              [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY="8388608"  
+              [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS="4"
               cp $BIGIP_DOMAIN_HOSTDEV_TEMPLATE $BIGIP_DOMAIN_HOSTDEV
               cp $BIGIP_DOMAIN_MACVTAP_TEMPLATE $BIGIP_DOMAIN_MACVTAP
               sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_HOSTDEV
@@ -276,7 +276,8 @@ write_files:
               sed -i 's|__ETH3VF2PCIFUNC__|'${ETH3VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
               iommu_enabled=$(grep iommu /etc/default/grub | wc -l)
               if [ "$iommu_enabled" -ne "1" ]; then
-                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=11-31,43-63 nohz_full=11-31,43-63 rcu_nocbs=11-31,43-63 nosmt"/g' /etc/default/grub
+                # sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-9 nohz_full=6-9 rcu_nocbs=6-9 nosmt"/g' /etc/default/grub
+                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt"/g' /etc/default/grub
                 /usr/sbin/update-grub
                 reboot
               fi
@@ -521,7 +522,9 @@ write_files:
           </metadata>
           <memory>__BIGIP_VM_MEMORY__</memory>
           <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
-          <vcpu>__BIGIP_VM_VCPUS__</vcpu>
+          <!-- vcpu>__BIGIP_VM_VCPUS__</vcpu -->
+          <!-- CPU pinning to core 6,7,8,9 on NUMA 0 - same as Intel NIC  -->
+          <vcpu placement='static' cpuset='6,7,8,9'>4</vcpu>
           <os>
             <type arch="x86_64" machine="q35">hvm</type>
             <boot dev="hd"/>
