@@ -778,11 +778,11 @@ write_files:
             dhcp4: no
             dhcp6: no
           vf3:
-            link: eth3
+            link: eth2
             dhcp4: no
             dhcp6: no
           vf4:
-            link: eth4
+            link: eth3
             dhcp4: no
             dhcp6: no
         bonds:
