@@ -376,6 +376,15 @@ write_files:
       
       
       function start_vm {
+          ip link set eth0 vf 0 trust on
+          ip link set eth1 vf 0 trust on
+          ip link set eth2 vf 0 trust on
+          ip link set eth3 vf 0 trust on
+          ip link set eth0 vf 0 spookchk off
+          ip link set eth0 vf 0 spoofchk off
+          ip link set eth1 vf 0 spoofchk off
+          ip link set eth2 vf 0 spoofchk off
+          ip link set eth3 vf 0 spoofchk off
           add_port_forward_management_traffic
           [[ -z "${BIGIP_VM_NAME}" ]] && BIGIP_VM_NAME="BIG-IP-Virtual-Edition"
           running=$(virsh list --all | grep $BIGIP_VM_NAME | grep 'running' | wc -l)
