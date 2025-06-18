@@ -49,7 +49,16 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/onboarding.sh"
 
-# onboarding script
+# uninstall script
+echo "  - path: $destination_dir/uninstall.sh" >> $cloudinit_file
+echo "    permissions: 0755" >> $cloudinit_file
+echo "    content: |" >> $cloudinit_file
+
+while IFS= read -r line; do
+  echo "      $line" >> $cloudinit_file
+done < "../scripts/uninstall.sh"
+
+# start script
 echo "  - path: $destination_dir/start" >> $cloudinit_file
 echo "    permissions: 0755" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -58,7 +67,7 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/start"
 
-# onboarding script
+# stop script
 echo "  - path: $destination_dir/stop" >> $cloudinit_file
 echo "    permissions: 0755" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -67,7 +76,7 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/stop"
 
-# BIGIPDomainTemplate
+# BIGIPDomainHOSTDEVTemplate
 echo "  - path: $destination_dir/BIGIPDomainHOSTDEVTemplate.xml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -76,7 +85,7 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/BIGIPDomainHOSTDEVTemplate.xml"
 
-# BIGIPDomainTemplate
+# BIGIPDomainMACVTAPTemplate
 echo "  - path: $destination_dir/BIGIPDomainMACVTAPTemplate.xml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -85,7 +94,7 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/BIGIPDomainMACVTAPTemplate.xml"
 
-# netplan
+# netplan template
 echo "  - path: $destination_dir/netplan_template.yaml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -94,7 +103,7 @@ while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/netplan_template.yaml"
 
-# BIGIP user-data
+# BIGIP user-data template
 echo "  - path: $destination_dir/BIGIPUserDataTemplate.yaml" >> $cloudinit_file
 echo "    permissions: 0644" >> $cloudinit_file
 echo "    content: |" >> $cloudinit_file
@@ -102,6 +111,15 @@ echo "    content: |" >> $cloudinit_file
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
 done < "../scripts/BIGIPUserDataTemplate.yaml"
+
+# same etc_big file
+echo "  - path: $destination_dir/etc_bigip_sample.txt" >> $cloudinit_file
+echo "    permissions: 0644" >> $cloudinit_file
+echo "    content: |" >> $cloudinit_file
+
+while IFS= read -r line; do
+  echo "      $line" >> $cloudinit_file
+done < "../scripts/ect_bigip_sample.txt"
 
 # runcmd
 echo "runcmd: [nohup sh -c '$destination_dir/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]" >> $cloudinit_file

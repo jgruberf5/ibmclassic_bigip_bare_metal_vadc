@@ -530,6 +530,32 @@ write_files:
       if [ "$DEB_PACKAGE_POST_INST" -ne "1" ]; then 
           start_systemd_service
       fi
+  - path: /opt/F5Networks/onboarding/uninstall.sh
+    permissions: 0755
+    content: |
+      #!/bin/bash
+      
+      export script_dir=/opt/F5Networks/onboarding
+      
+      # Source the installenv file
+      if [ -f "$script_dir/installenv" ]; then
+        source "$script_dir/installenv"
+      else
+        echo "Error: installenv file not found in $script_dir"
+        exit 1
+      fi
+      
+      stop_systemd_service
+      disable_systemd_service
+      remove_systemd_unit_file
+      undefine_bigip_domain
+      remove_bigip_image
+      revert_netplan
+      
+      [[ -z "${DEB_PACKAGE_PRERM}" ]] && DEB_PACKAGE_PRERM=0
+      if [ "$DEB_PACKAGE_PRERM" -ne "1" ]; then 
+          rm -rf $script_dir
+      fi
   - path: /opt/F5Networks/onboarding/start
     permissions: 0755
     content: |
@@ -946,4 +972,7 @@ write_files:
               class: Trunk
               interfaces:
                 - "1.3"
+  - path: /opt/F5Networks/onboarding/etc_bigip_sample.txt
+    permissions: 0644
+    content: |
 runcmd: [nohup sh -c '/opt/F5Networks/onboarding/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]
