@@ -18,8 +18,8 @@ The artifacts will be generated in a `build` subdirectory of the cloned resposit
 | Artifact File  | Mode | Description |
 | ------------- | ------------- | ------------- |
 | `build/onboarding.sh` | provisioning script | host this script on a public bucket and reference the object URL when provisioning a IBM Classic bare metal server |
-| `build/user-data.yaml | cloud-init user-data | post as user-data for the IBM Classic bare metal server |
-| `build/bigip-virtual-edition.deb | debian package | manually install with dpkg -i |
+| `build/user-data.yaml` | cloud-init user-data | post as user-data for the IBM Classic bare metal server |
+| `build/bigip-virtual-edition.deb` | debian package | manually install with `dpkg -i bigip-virtual-edition.deb` |
 
 The automation will generate a `systemd` oneshot service which will assure the appropriate F5 assets are installed and that the standard IBM Classic bare metal service networking is adapted for BIG-IP virtual edition use.
 
