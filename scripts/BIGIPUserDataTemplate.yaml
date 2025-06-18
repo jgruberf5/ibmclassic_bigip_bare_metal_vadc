@@ -5,19 +5,17 @@ chpasswd:
     admin:__TMOS_ADMIN_PASSWORD__
   expire: False
 ssh_authorized_keys:
-  - ssh-rsa [ __BIGIP_SSH_AUTH_KEY__ ]
+  - __BIGIP_SSH_AUTH_KEY__
 tmos_static_mgmt:
   enabled: true
   icontrollx_trusted_sources: false
   ip: __BIGIP_MANAGEMENT_IP__
   gw: __BIGIP_MANAGEMENT_NEXT_HOP__
   mtu: __BIGIP_MANAGEMENT_MTU__
-  # post_onboard_enabled: true
-  # post_onboard_commands:
-  #  - tmsh create net trunk slPrivate interfaces replace-all-with { 1.1 1.2 }
-  #  - tmsh create net trunk slPublic interfaces replace-all-with { 1.3 1.4 }
-  #  - tmsh create net trunk customerPrivate interfaces replace-all-with { 1.5 1.6 }
-  #  - tmsh create net trunk customerPublic interfaces replace-all-with { 1.7 1.8 }
+  post_onboard_enabled: true
+  post_onboard_commands:
+    - tmsh create net trunk bond0 interfaces replace-all-with { 1.1 1.2 }
+    - tmsh create net trunk bond1 interfaces replace-all-with { 1.3 1.4 }
 tmos_declared:
   enabled: true
   icontrollx_trusted_sources: false
@@ -43,23 +41,13 @@ tmos_declared:
         nameServers:
           - __DNS_1__
           - __DNS_2__
-#      slPrivate:
-#        class: Trunk
-#        interfaces:
-#          - "1.1"
-#          - "1.2"
-#      slPublic:
-#        class: Trunk
-#        interfaces:
-#          - "1.3"
-#          - "1.4"
-#      customerPrivate:
-#        class: Trunk
-#        interfaces:
-#          - "1.5"
-#          - "1.6"
-#      customerPublic:
-#        class: Trunk
-#        interfaces:
-#          - "1.7"
-#          - "1.8"
+      bond0:
+        class: Trunk
+        interfaces:
+          - "1.1"
+          - "1.2"
+      bond1:
+        class: Trunk
+        interfaces:
+          - "1.3"
+          - "1.4"

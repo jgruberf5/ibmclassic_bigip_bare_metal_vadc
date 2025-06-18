@@ -19,10 +19,29 @@ The artifacts will be generated in a `build` subdirectory of the cloned resposit
 | ------------- | ------------- | ------------- |
 | `build/onboarding.sh` | provisioning script | host this script on a public bucket and reference the object URL when provisioning a IBM Classic bare metal server |
 | `build/user-data.yaml | cloud-init user-data | post as user-data for the IBM Classic bare metal server |
+| `build/bigip-virtual-edition.deb | debian package | manually install with dpkg -i |
 
 The automation will generate a `systemd` oneshot service which will assure the appropriate F5 assets are installed and that the standard IBM Classic bare metal service networking is adapted for BIG-IP virtual edition use.
 
 ![image](./assets/ibm_baremetal_bigip_virtual_edition_networking_diagram.svg)
+
+By default HTTPS and SSH traffic are NATed for management access from either the private primary or public primary addresses assigned to the bare metal node. 
+
+HTTP access to the BIG-IP management gui: https://[primary_bare_metal_host_address]
+SSH access to the BIG-IP management CLI: ssh -p 2222 root@[primary_bare_metal_host_address]
+
+To disable the NAT access:
+
+```
+. /opt/F5Networks/onboarding/installenv
+remove_port_forward_management_traffic
+```
+
+Access to the BIG-IP console from the bare metal host:
+
+```
+virsh console BIG-IP-Virtual-Edition
+```
 
 This automation assumes one BIG-IP virtual edition instance per IBM Classic baremetal server.
 
@@ -67,3 +86,16 @@ export MANAGEMENT_PORT_FORWARDS=0
 To start the BIG-IP: `systemctl start bigip-virtual-edition`
 
 To shutdown the BIG-IP: `systemctl stop bigip-virtual-edition`
+
+
+## To unistall from a debian package install
+
+```
+dpkg -r bigip-virtual-edition
+```
+
+## To uninstall manaually from bare metal host shell
+
+```
+sh -c /opt/F5Networks/onboarding/uninstall.sh
+```

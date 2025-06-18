@@ -13,4 +13,8 @@ fi
 set_permissions
 create_systemd_unit_file
 enable_systemd_service
-start_systemd_service
+
+[[ -z "${DEB_PACKAGE_POST_INST}" ]] && DEB_PACKAGE_POST_INST=0
+if [ "$DEB_PACKAGE_POST_INST" -ne "1" ]; then 
+    start_systemd_service
+fi

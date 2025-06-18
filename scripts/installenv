@@ -30,7 +30,7 @@ function create_netplan {
     echo "Creating BIG-IP virtual edition management access and activating SR-IOV virtual functions"
     
     NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
-    NETPLAN_BACKUP=/opt/F5Networks/onboarding/netplan-orginial.yaml
+    NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
     # original copy needed
     if ! [ -e $NETPLAN_BACKUP ]; then
       cp $NETPLAN_ACTIVE $NETPLAN_BACKUP
@@ -109,6 +109,19 @@ function create_netplan {
     echo "Applying Netplan"
     cp $NETPLAN_OUTPUT $NETPLAN_ACTIVE
     netplan apply
+}
+
+
+function revert_netplan {
+    NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
+    NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
+    # original copy needed
+    if ! [ -e $NETPLAN_BACKUP ]; then
+      cp $NETPLAN_BACKUP $NETPLAN_ACTIVE
+      echo "Applying Netplan"
+      netplan apply
+      mv $NETPLAN_BACKUP $NETPLAN_BACKUP.reverted
+    fi
 }
 
 
@@ -266,6 +279,15 @@ function create_bigip_domain_xml {
 }
 
 
+function undefine_bigip_domain {
+    [[ -z "${BIGIP_VM_NAME}" ]] && BIGIP_VM_NAME="BIG-IP-Virtual-Edition"
+    defined=$(virsh list --all | grep $BIGIP_VM_NAME | wc -l)
+    if [ "$defined" -eq "1" ]; then 
+        virsh undefine $BIGIP_VM_NAME
+    fi
+}
+
+
 function download_bigip_image {
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
@@ -291,6 +313,24 @@ function download_bigip_image {
     done
     cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
   fi
+}
+
+
+function remove_bigip_image {
+  [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
+  [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
+  [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5="$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME.md5"
+  if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ] && [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
+      rm -rf "$script_dir/BIGIPImages"
+  fi
+}
+
+
+function reset_bigip_image {
+   if [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
+     rm "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
+   fi 
+   download_bigip_image
 }
 
 
@@ -407,6 +447,12 @@ function create_systemd_unit_file {
     echo "" >> $UNIT_FILE
     echo "[Install]" >> $UNIT_FILE
     echo "WantedBy=multi-user.target" >> $UNIT_FILE
+}
+
+
+function remove_systemd_unit_file {
+    UNIT_FILE="/etc/systemd/system/bigip-virtual-edition.service"
+    rm $UNIT_FILE
 }
 
 

@@ -49,7 +49,7 @@ write_files:
           echo "Creating BIG-IP virtual edition management access and activating SR-IOV virtual functions"
           
           NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
-          NETPLAN_BACKUP=/opt/F5Networks/onboarding/netplan-orginial.yaml
+          NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
           # original copy needed
           if ! [ -e $NETPLAN_BACKUP ]; then
             cp $NETPLAN_ACTIVE $NETPLAN_BACKUP
@@ -128,6 +128,19 @@ write_files:
           echo "Applying Netplan"
           cp $NETPLAN_OUTPUT $NETPLAN_ACTIVE
           netplan apply
+      }
+      
+      
+      function revert_netplan {
+          NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
+          NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
+          # original copy needed
+          if ! [ -e $NETPLAN_BACKUP ]; then
+            cp $NETPLAN_BACKUP $NETPLAN_ACTIVE
+            echo "Applying Netplan"
+            netplan apply
+            mv $NETPLAN_BACKUP $NETPLAN_BACKUP.reverted
+          fi
       }
       
       
@@ -285,6 +298,15 @@ write_files:
       }
       
       
+      function undefine_bigip_domain {
+          [[ -z "${BIGIP_VM_NAME}" ]] && BIGIP_VM_NAME="BIG-IP-Virtual-Edition"
+          defined=$(virsh list --all | grep $BIGIP_VM_NAME | wc -l)
+          if [ "$defined" -eq "1" ]; then 
+              virsh undefine $BIGIP_VM_NAME
+          fi
+      }
+      
+      
       function download_bigip_image {
         [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
         [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
@@ -310,6 +332,24 @@ write_files:
           done
           cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
         fi
+      }
+      
+      
+      function remove_bigip_image {
+        [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
+        [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
+        [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5="$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME.md5"
+        if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ] && [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
+            rm -rf "$script_dir/BIGIPImages"
+        fi
+      }
+      
+      
+      function reset_bigip_image {
+         if [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
+           rm "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
+         fi 
+         download_bigip_image
       }
       
       
@@ -429,6 +469,12 @@ write_files:
       }
       
       
+      function remove_systemd_unit_file {
+          UNIT_FILE="/etc/systemd/system/bigip-virtual-edition.service"
+          rm $UNIT_FILE
+      }
+      
+      
       function enable_systemd_service {
           systemctl enable bigip-virtual-edition.service
       }
@@ -479,6 +525,11 @@ write_files:
       set_permissions
       create_systemd_unit_file
       enable_systemd_service
+      
+      [[ -z "${DEB_PACKAGE_POST_INST}" ]] && DEB_PACKAGE_POST_INST=0
+      if [ "$DEB_PACKAGE_POST_INST" -ne "1" ]; then 
+          start_systemd_service
+      fi
   - path: /opt/F5Networks/onboarding/start
     permissions: 0755
     content: |
@@ -573,37 +624,39 @@ write_files:
             <controller type="pci" model="pcie-root-port"/>
             <controller type="pci" model="pcie-root-port"/>
             <interface type="bridge">
-              <source bridge="br0"/>
-              <model type="virtio"/>
-              <address type='pci' domain='0x0000' bus='0x01' slot='0x00' function='0x0'/>
+              <source bridge='br0'/>
+              <target dev='vnet0'/>
+              <model type='virtio'/>
+              <alias name='net0'/>
+              <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
             </interface>
             <!-- PCI Passthrough for VF eth0vf0  pci@__ETH0VF1PCIDOMAIN__:__ETH0VF1PCIBUF__:__ETH0VF1PCISLOT__.__ETH0VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
               <source>
                 <address type='pci' domain='0x__ETH0VF1PCIDOMAIN__' bus='0x__ETH0VF1PCIBUS__' slot='0x__ETH0VF1PCISLOT__' function='0x__ETH0VF1PCIFUNC__'/>
               </source>
-              <address type='pci' domain='0x0000' bus='0x00' slot='0x05' function='0x0'/>
+              <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
             </interface>
             <!-- PCI Passthrough for VF eth1vf0  pci@__ETH1VF1PCIDOMAIN__:__ETH1VF1PCIBUF__:__ETH1VF1PCISLOT__.__ETH1VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
               <source>
                 <address type='pci' domain='0x__ETH2VF1PCIDOMAIN__' bus='0x__ETH2VF1PCIBUS__' slot='0x__ETH2VF1PCISLOT__' function='0x__ETH2VF1PCIFUNC__'/>
               </source>
-              <address type='pci' domain='0x0000' bus='0x00' slot='0x06' function='0x0'/>
+              <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
             </interface>
             <!-- PCI Passthrough for VF eth2vf0  pci@__ETH2VF1PCIDOMAIN__:__ETH2VF1PCIBUF__:__ETH2VF1PCISLOT__.__ETH2VF1PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
               <source>
                 <address type='pci' domain='0x__ETH1VF1PCIDOMAIN__' bus='0x__ETH1VF1PCIBUS__' slot='0x__ETH1VF1PCISLOT__' function='0x__ETH1VF1PCIFUNC__'/>
               </source>
-              <address type='pci' domain='0x0000' bus='0x00' slot='0x07' function='0x0'/>
+              <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
             </interface>
             <!-- PCI Passthrough for VF eth3vf0  pci@__ETH0VF3PCIDOMAIN__:__ETH0VF3PCIBUF__:__ETH0VF3PCISLOT__.__ETH0VF3PCIFUNC__ -->
             <interface type='hostdev' managed='yes'>
               <source>
                 <address type='pci' domain='0x__ETH3VF1PCIDOMAIN__' bus='0x__ETH3VF1PCIBUS__' slot='0x__ETH3VF1PCISLOT__' function='0x__ETH3VF1PCIFUNC__'/>
               </source>
-              <address type='pci' domain='0x0000' bus='0x00' slot='0x08' function='0x0'/>
+              <address type='pci' domain='0x0000' bus='0x00' slot='0x09' function='0x0'/>
             </interface>
             <console type="pty"/>
             <channel type="unix">
@@ -848,19 +901,17 @@ write_files:
           admin:__TMOS_ADMIN_PASSWORD__
         expire: False
       ssh_authorized_keys:
-        - ssh-rsa [ __BIGIP_SSH_AUTH_KEY__ ]
+        - __BIGIP_SSH_AUTH_KEY__
       tmos_static_mgmt:
         enabled: true
         icontrollx_trusted_sources: false
         ip: __BIGIP_MANAGEMENT_IP__
         gw: __BIGIP_MANAGEMENT_NEXT_HOP__
         mtu: __BIGIP_MANAGEMENT_MTU__
-        # post_onboard_enabled: true
-        # post_onboard_commands:
-        #  - tmsh create net trunk slPrivate interfaces replace-all-with { 1.1 1.2 }
-        #  - tmsh create net trunk slPublic interfaces replace-all-with { 1.3 1.4 }
-        #  - tmsh create net trunk customerPrivate interfaces replace-all-with { 1.5 1.6 }
-        #  - tmsh create net trunk customerPublic interfaces replace-all-with { 1.7 1.8 }
+        post_onboard_enabled: true
+        post_onboard_commands:
+          - tmsh create net trunk bond0 interfaces replace-all-with { 1.1 1.2 }
+          - tmsh create net trunk bond1 interfaces replace-all-with { 1.3 1.4 }
       tmos_declared:
         enabled: true
         icontrollx_trusted_sources: false
@@ -886,23 +937,13 @@ write_files:
               nameServers:
                 - __DNS_1__
                 - __DNS_2__
-      #      slPrivate:
-      #        class: Trunk
-      #        interfaces:
-      #          - "1.1"
-      #          - "1.2"
-      #      slPublic:
-      #        class: Trunk
-      #        interfaces:
-      #          - "1.3"
-      #          - "1.4"
-      #      customerPrivate:
-      #        class: Trunk
-      #        interfaces:
-      #          - "1.5"
-      #          - "1.6"
-      #      customerPublic:
-      #        class: Trunk
-      #        interfaces:
-      #          - "1.7"
+            bond0:
+              class: Trunk
+              interfaces:
+                - "1.1"
+                - "1.2"
+            bond1:
+              class: Trunk
+              interfaces:
+                - "1.3"
 runcmd: [nohup sh -c '/opt/F5Networks/onboarding/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]
