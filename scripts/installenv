@@ -321,6 +321,10 @@ function undefine_bigip_domain {
     if [ "$defined" -eq "1" ]; then 
         virsh undefine $BIGIP_VM_NAME
     fi
+    GRUB_CMDLINE_LINUX_DEFAULT="GRUB_CMDLINE_LINUX_DEFAULT=\"\""
+    sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT.*$/${GRUB_CMDLINE_LINUX_DEFAULT}/g" /etc/default/grub
+    /usr/sbin/update-grub
+    echo "remember to reboot to give back isolated cores to the linux kernel"
 }
 
 
