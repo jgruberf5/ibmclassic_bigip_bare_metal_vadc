@@ -20,4 +20,6 @@ revert_netplan
 [[ -z "${DEB_PACKAGE_PRERM}" ]] && DEB_PACKAGE_PRERM=0
 if [ "$DEB_PACKAGE_PRERM" -ne "1" ]; then 
     rm -rf /opt/F5Networks
+else
+    rn -rf /opt/F5Networks/onboarding/*
 fi
