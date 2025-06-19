@@ -220,7 +220,7 @@ function create_bigip_domain_xml {
         FIRST_CORE=$(lscpu | grep "NUMA node$NUMA_NODE" | tr -s ' '| cut -d' ' -f4 | cut -d'-' -f1)
         LAST_CORE=$(lscpu | grep "NUMA node$NUMA_NODE" | tr -s ' '| cut -d' ' -f4 | cut -d'-' -f2)
         let "MAX_NUMA_CORES=($LAST_CORE-$FIRST_CORE)"
-        echo "found $MAX_NUMA_CORES for NIC"
+        echo "found $MAX_NUMA_CORES cores in the same NUMA domain for our NIC"
         # SMALL DEFAULT to 4 VCPUs and 8G
         SUGGESTED_CORES=4
         SUGGESTED_MEMORY="8388608"
@@ -237,9 +237,14 @@ function create_bigip_domain_xml {
         # FIND OUT WHAT IS AVAILABLE - we leave 0-5 cores for kernel interupts hypervisor processing
         let "REQUIRED_CORES=6+$BIGIP_VM_VCPUS"
         let "REQUIRED_MEMORY=((((1024*1024)*2)*$BIGIP_VM_VCPUS)+4)"
+        BIGIP_VM_CPUSET=""
         if [ "$MAX_NUMA_CORES" -gt "$REQUIRED_CORES" ] && [ "$TOTAL_MEMORY" -gt "$REQUIRED_MEMORY" ]; then 
             # ZERO MATH
             let "ISO_CORES_LAST=($REQUIRED_CORES-1)"
+            for ((i=6; i<$ISO_CORES_LAST; i++)); do 
+                BIGIP_VM_CPUSET="${BIGIP_VM_CPUSET}${i},"; 
+            done
+            BIGIP_VM_CPUSET="${BIGIP_VM_CPUSET}${ISO_CORES_LAST}"
             # SET ISOLATION CORES
             GRUB_CMDLINE="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-$ISO_CORES_LAST nohz_full=6-$ISO_CORES_LAST rcu_nocbs=6-$ISO_CORES_LAST nosmt"
         else
@@ -248,6 +253,10 @@ function create_bigip_domain_xml {
             BIGIP_VM_MEMORY=$SUGGESTED_MEMORY
             # ZERO MATH
             let "ISO_CORES_LAST=($BIGIP_VM_VCPUS+5)"
+            for ((i=6; i<$ISO_CORES_LAST; i++)); do 
+                BIGIP_VM_CPUSET="${BIGIP_VM_CPUSET}${i},"; 
+            done
+            BIGIP_VM_CPUSET="${BIGIP_VM_CPUSET}${ISO_CORES_LAST}"
             # SET ISOLATION CORES
             GRUB_CMDLINE="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-$ISO_CORES_LAST nohz_full=6-$ISO_CORES_LAST rcu_nocbs=6-$ISO_CORES_LAST nosmt"
         fi
@@ -258,6 +267,8 @@ function create_bigip_domain_xml {
         sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_HOSTDEV
         sed -i "s|__BIGIP_VM_MEMORY__|$BIGIP_VM_MEMORY|g" $BIGIP_DOMAIN_MACVTAP
         sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_HOSTDEV
+        set -i "S|__BIGIP_VM_CPUSET__|$BIGIP_VM_CPUSET|g" $BIGIP_DOMAIN_HOSTDEV
+        set -i "S|__BIGIP_VM_CPUSET__|$BIGIP_VM_CPUSET|g" $BIGIP_DOMAIN_MACVTAP
         sed -i "s|__BIGIP_VM_VCPUS__|$BIGIP_VM_VCPUS|g" $BIGIP_DOMAIN_MACVTAP
         sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_HOSTDEV
         sed -i 's|__BIGIP_IMAGE_FILE__|'${BIGIP_IMAGE_FILE}'|g' $BIGIP_DOMAIN_MACVTAP

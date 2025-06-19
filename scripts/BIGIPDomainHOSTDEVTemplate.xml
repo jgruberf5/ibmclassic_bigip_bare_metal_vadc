@@ -7,9 +7,7 @@
     </metadata>
     <memory>__BIGIP_VM_MEMORY__</memory>
     <currentMemory>__BIGIP_VM_MEMORY__</currentMemory>
-    <!-- vcpu>__BIGIP_VM_VCPUS__</vcpu -->
-    <!-- CPU pinning to core 6,7,8,9 on NUMA 0 - same as Intel NIC  -->
-    <vcpu placement='static' cpuset='6,7,8,9'>4</vcpu>
+    <vcpu placement='static' cpuset='__BIGIP_VM_CPUSET__'>__BIGIP_VM_VCPUS__</vcpu>
     <os>
       <type arch="x86_64" machine="q35">hvm</type>
       <boot dev="hd"/>
