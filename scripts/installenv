@@ -9,8 +9,8 @@ fi
 
 
 function set_permissions {
-    chmod +x $script_dir/scripts/start
-    chmod +x $script_dir/scripts/stop
+    chmod +x $script_dir/start
+    chmod +x $script_dir/stop
 }
 
 
@@ -116,7 +116,7 @@ function revert_netplan {
     NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
     NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
     # original copy needed
-    if ! [ -e $NETPLAN_BACKUP ]; then
+    if [ -f "$NETPLAN_BACKUP" ]; then
       cp $NETPLAN_BACKUP $NETPLAN_ACTIVE
       echo "Applying Netplan"
       netplan apply

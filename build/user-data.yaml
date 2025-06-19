@@ -28,8 +28,8 @@ write_files:
       
       
       function set_permissions {
-          chmod +x $script_dir/scripts/start
-          chmod +x $script_dir/scripts/stop
+          chmod +x $script_dir/start
+          chmod +x $script_dir/stop
       }
       
       
@@ -135,7 +135,7 @@ write_files:
           NETPLAN_ACTIVE=/etc/netplan/01-netcfg.yaml
           NETPLAN_BACKUP=$script_dir/netplan-orginial.yaml
           # original copy needed
-          if ! [ -e $NETPLAN_BACKUP ]; then
+          if [ -f "$NETPLAN_BACKUP" ]; then
             cp $NETPLAN_BACKUP $NETPLAN_ACTIVE
             echo "Applying Netplan"
             netplan apply
@@ -554,7 +554,7 @@ write_files:
       
       [[ -z "${DEB_PACKAGE_PRERM}" ]] && DEB_PACKAGE_PRERM=0
       if [ "$DEB_PACKAGE_PRERM" -ne "1" ]; then 
-          rm -rf $script_dir
+          rm -rf /opt/F5Networks
       fi
   - path: /opt/F5Networks/onboarding/start
     permissions: 0755
