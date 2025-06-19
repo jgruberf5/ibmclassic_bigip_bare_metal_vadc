@@ -191,7 +191,7 @@ write_files:
           [[ -z "${BIGIP_INSTANCE_ID}" ]] && BIGIP_INSTANCE_ID="bigipinstance1"
           rm -rf "$script_dir/cidataiso"
           mkdir -p "$script_dir/cidataiso"
-          echo "instance-id: {{ $BIGIPecho "Type=oneshot" >> $UNIT_FILE_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
+          echo "instance-id: {{ $BIGIP_INSTANCE_ID }}" >> "$script_dir/cidataiso/meta-data"
           echo "local-hostname: {{ $BIGIP_HOSTNAME }}" >> "$script_dir/cidataiso/meta-data"
           mv $BIGIP_CLOUD_USERDATA "$script_dir/cidataiso/user-data"
           pushd $script_dir/cidataiso
