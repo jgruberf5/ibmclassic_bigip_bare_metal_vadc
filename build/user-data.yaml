@@ -233,8 +233,43 @@ write_files:
               BIGIP_DOMAIN_MACVTAP="$script_dir/BIGIPDomainMACVTAP.xml"
               BIGIP_IMAGE_FILE="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
               BIGIP_CLOUDINIT_ISO=/opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
-              [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY="8388608"  
-              [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS="4"
+              TOTAL_MEMORY=$(cat /proc/meminfo | grep MemTotal | tr -s ' ' | cut -d' ' -f2)
+              # ONLY USE CORES IN THE SAME NUMA DOMAIN AS OUR NIC
+              NUMA_NODE=$(cat /sys/class/net/eth0/device/numa_node)
+              FIRST_CORE=$(lscpu | grep "NUMA node$NUMA_NODE" | tr -s ' '| cut -d' ' -f4 | cut -d'-' -f1)
+              LAST_CORE=$(lscpu | grep "NUMA node$NUMA_NODE" | tr -s ' '| cut -d' ' -f4 | cut -d'-' -f2)
+              let "MAX_NUMA_CORES=($LAST_CORE-$FIRST_CORE)"
+              echo "found $MAX_NUMA_CORES for NIC"
+              # SMALL DEFAULT to 4 VCPUs and 8G
+              SUGGESTED_CORES=4
+              SUGGESTED_MEMORY="8388608"
+              # INCREASE DEFAULT to 8 VCPUs and 16G
+              if [ "$MAX_NUMA_CORES" -gt "14" ] && [ "$TOTAL_MEMORY" -gt "16777216" ]; then 
+                  # GO TO 8 vCPUs and 16G if we can
+                  SUGGESTED_CORES=8
+                  SUGGESTED_MEMORY=16777216
+              fi
+              echo "platform base suggestion is $SUGGESTED_CORES vCPUs and $SUGGESTED_MEMORY bytes RAM"
+              # FIND OUT REQUESTED VCPUs and RAM
+              [[ -z "${BIGIP_VM_VCPUS}" ]] && BIGIP_VM_VCPUS=$SUGGESTED_CORES
+              [[ -z "${BIGIP_VM_MEMORY}" ]] && BIGIP_VM_MEMORY=$SUGGESTED_MEMORY
+              # FIND OUT WHAT IS AVAILABLE - we leave 0-5 cores for kernel interupts hypervisor processing
+              let "REQUIRED_CORES=6+$BIGIP_VM_VCPUS"
+              let "REQUIRED_MEMORY=((((1024*1024)*2)*$BIGIP_VM_VCPUS)+4)"
+              if [ "$MAX_NUMA_CORES" -gt "$REQUIRED_CORES" ] && [ "$TOTAL_MEMORY" -gt "$REQUIRED_MEMORY" ]; then 
+                  # ZERO MATH
+                  let "ISO_CORES_LAST=($REQUIRED_CORES-1)"
+                  # SET ISOLATION CORES
+                  GRUB_CMDLINE="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-$ISO_CORES_LAST nohz_full=6-$ISO_CORES_LAST rcu_nocbs=6-$ISO_CORES_LAST nosmt"
+              else
+                  # ASK FOR TOO MUCH, BACK OFF TO SUGGESTION
+                  BIGIP_VM_VCPUS=$SUGGESTED_CORES
+                  BIGIP_VM_MEMORY=$SUGGESTED_MEMORY
+                  # ZERO MATH
+                  let "ISO_CORES_LAST=($BIGIP_VM_VCPUS+5)"
+                  # SET ISOLATION CORES
+                  GRUB_CMDLINE="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-$ISO_CORES_LAST nohz_full=6-$ISO_CORES_LAST rcu_nocbs=6-$ISO_CORES_LAST nosmt"
+              fi
               cp $BIGIP_DOMAIN_HOSTDEV_TEMPLATE $BIGIP_DOMAIN_HOSTDEV
               cp $BIGIP_DOMAIN_MACVTAP_TEMPLATE $BIGIP_DOMAIN_MACVTAP
               sed -i 's|__BIGIP_VM_NAME__|'${BIGIP_VM_NAME}'|g' $BIGIP_DOMAIN_HOSTDEV
@@ -289,7 +324,8 @@ write_files:
               sed -i 's|__ETH3VF2PCIFUNC__|'${ETH3VF2PCIFUNC}'|g' $BIGIP_DOMAIN_HOSTDEV
               iommu_enabled=$(grep iommu /etc/default/grub | wc -l)
               if [ "$iommu_enabled" -ne "1" ]; then
-                sed -i 's/^GRUB_CMDLINE_LINUX_DEFAULT.*$/GRUB_CMDLINE_LINUX_DEFAULT="intel_iommu=on iommu=pt numa_balancing=disable processor.max_cstate=0 isolcpus=6-9 nohz_full=6-9 rcu_nocbs=6-9 nosmt"/g' /etc/default/grub
+                GRUB_CMDLINE_LINUX_DEFAULT="GRUB_CMDLINE_LINUX_DEFAULT=\"$GRUB_CMDLINE\""
+                sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT.*$/${GRUB_CMDLINE_LINUX_DEFAULT}/g" /etc/default/grub
                 /usr/sbin/update-grub
                 reboot
               fi
