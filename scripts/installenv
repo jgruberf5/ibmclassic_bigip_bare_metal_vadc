@@ -332,6 +332,12 @@ function create_bigip_domain_xml {
     fi
 }
 
+function reset_kerne_boot_args {
+    GRUB_CMDLINE_LINUX_DEFAULT="GRUB_CMDLINE_LINUX_DEFAULT=\"\""
+    sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT.*$/${GRUB_CMDLINE_LINUX_DEFAULT}/g" /etc/default/grub
+    /usr/sbin/update-grub
+    echo "remember to reboot to give back isolated cores to the linux kernel"
+}
 
 function undefine_bigip_domain {
     [[ -z "${BIGIP_VM_NAME}" ]] && BIGIP_VM_NAME="BIG-IP-Virtual-Edition"
@@ -339,10 +345,6 @@ function undefine_bigip_domain {
     if [ "$defined" -eq "1" ]; then 
         virsh undefine $BIGIP_VM_NAME
     fi
-    GRUB_CMDLINE_LINUX_DEFAULT="GRUB_CMDLINE_LINUX_DEFAULT=\"\""
-    sed -i "s/^GRUB_CMDLINE_LINUX_DEFAULT.*$/${GRUB_CMDLINE_LINUX_DEFAULT}/g" /etc/default/grub
-    /usr/sbin/update-grub
-    echo "remember to reboot to give back isolated cores to the linux kernel"
 }
 
 function remove_bigip_domain_xml {
@@ -512,6 +514,15 @@ function shutdown_vm {
         echo "$BIGIP_VM_NAME is already shutdown.."
     else
         virsh shutdown $BIGIP_VM_NAME
+        IS_SHUTDOWN=0
+        while [ "$IS_SHUTDOWN" -lt "1" ]; do
+            any_defined=$(virsh list --all | wc -l)
+            if [ "$any_defined" -gt "0" ]; then
+                IS_SHUTDOWN=$(virsh list --all | grep $BIGIP_VM_NAME | grep shut | wc -l)
+            else
+                IS_SHUTDOWN=1
+            fi
+        done
     fi
 }
 
@@ -562,8 +573,7 @@ function stop_systemd_service {
 }
 
 function reinit {
-    stop
-    sleep 30 # pause VM to stop
+    shutdown_vm
     remove_bigip_domain_xml
     remove_bigip_userdata
     reset_bigip_instance_disk
