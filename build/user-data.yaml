@@ -197,9 +197,16 @@ write_files:
           pushd $script_dir/cidataiso
           mkisofs -V cidata -lJR -o output.iso meta-data user-data
           popd
-          cp $script_dir/cidataiso/output.iso /opt/F5Networks/onboarding/BIGIP_USER_DATA.iso
+          cp $script_dir/cidataiso/output.iso $script_dir/BIGIP_USER_DATA.iso
       }
       
+      function remove_bigip_userdata {
+          rm -rf "$script_dir/cidataiso"
+          BIGIP_USER_DATA_ISO_FILE="$script_dir/BIGIP_USER_DATA.iso"
+          if [ -f BIGIP_USER_DATA_ISO_FILE ]; then
+            rm $BIGIP_USER_DATA_ISO_FILE
+          fi
+      }
       
       function create_bigip_domain_xml {
           [[ -z "${BIGIP_VM_NAME}" ]] && BIGIP_VM_NAME="BIG-IP-Virtual-Edition"
@@ -357,13 +364,34 @@ write_files:
           echo "remember to reboot to give back isolated cores to the linux kernel"
       }
       
+      function remove_bigip_domain_xml {
+          BIGIP_DOMAIN_HOSTDEV_TEMPLATE="$script_dir/BIGIPDomainHOSTDEVTemplate.xml"
+          BIGIP_DOMAIN_MACVTAP_TEMPLATE="$script_dir/BIGIPDomainMACVTAPTemplate.xml"
+          if [ -f $BIGIP_DOMAIN_HOSTDEV_TEMPLATE ]; then
+              rm $BIGIP_DOMAIN_HOSTDEV_TEMPLATE
+          fi 
+          if [ -f $BIGIP_DOMAIN_MACVTAP_TEMPLATE ]; then
+              rm $BIGIP_DOMAIN_MACVTAP_TEMPLATE
+          fi
+      }
       
       function download_bigip_image {
         [[ -z "${BIGIP_IMAGE_DOWNLOAD_PATH}" ]] && BIGIP_IMAGE_DOWNLOAD_PATH='https://s3.us-east.cloud-object-storage.appdomain.cloud/f5-adc-bigip-17.5.0-0.0.15.all-1slot-031025001-us-east'
         [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
         [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5="$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME.md5"
-        if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ] && [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
-            echo "Existing BIG-IP virtual edition disk exists.. skipping download"
+        INSTANCE_DISK_NAME="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
+        if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ]; then
+            echo "Existing BIG-IP virtual edition image exists.."
+            download_md5=$(md5sum "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" | cut -d' ' -f1)
+            image_md5=$(cat "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5")
+            if [ ! "$image_md5" == "$download_md5" ]; then
+                echo "Existing BIG-IP virtual edition image MD5SUM failed, deleting and re-downloading"
+                rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+                rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+                download_bigip_image
+            else
+                echo "Existing BIG-IP virtual edition image is valid.. skipping download"
+            fi
         else
           mkdir -p "$script_dir/BIGIPImages"
           image_url="$BIGIP_IMAGE_DOWNLOAD_PATH/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
@@ -381,7 +409,11 @@ write_files:
             download_md5=$(md5sum "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" | cut -d' ' -f1)
             image_md5=$(cat "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5")
           done
-          cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
+        fi
+        if ! [ -f $INSTANCE_DISK_NAME ]; then
+            cp "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" $INSTANCE_DISK_NAME
+        else
+            echo "Found existing instance disk $INSTANCE_DISK_NAME. You might want to check it is not in use. If not, run 'reset_bigip_instance_disk' to update it."
         fi
       }
       
@@ -396,11 +428,10 @@ write_files:
       }
       
       
-      function reset_bigip_image {
+      function reset_bigip_instance_disk {
          if [ -f "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2" ]; then
            rm "$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
-         fi 
-         download_bigip_image
+         fi
       }
       
       
@@ -552,15 +583,20 @@ write_files:
       function reinit {
           stop
           sleep 30 # pause VM to stop
-          rm $script_dir/BIGIPDomainHOSTDEV.xml
-          rm $script_dir/BIGIPDomainMACVTAP.xml
-          rm $script_dir/BIGIP_USER_DATA.iso
-          rm $script_dir/cidataiso/meta-data
-          rm $script_dir/cidataiso/output.iso
-          rm $script_dir/cidataiso/user-data
-          rm $script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2
+          remove_bigip_domain_xml
+          remove_bigip_userdata
+          reset_bigip_instance_disk
           revert_netplan
-          reboot
+          read -p "Do you want to reboot the host machine? (y/n): " answer
+          if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+              echo "Rebooting host machine.."
+              reboot
+          else
+              read -p "Do you want to start a bigip-virtual-edition service now? (y/n): " answer
+              if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+                  start
+              fi
+          fi
       }
       
       function start {
