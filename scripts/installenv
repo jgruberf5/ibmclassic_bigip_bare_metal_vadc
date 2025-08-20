@@ -448,6 +448,10 @@ function add_port_forward_management_traffic {
 
 
 function start_vm {
+    ip link set eth0 up
+    ip link set eth1 up
+    ip link set eth2 up
+    ip link set eth3 up
     ip link set eth0 vf 0 trust on
     ip link set eth1 vf 0 trust on
     ip link set eth2 vf 0 trust on
@@ -526,6 +530,19 @@ function stop_systemd_service {
     systemctl stop bigip-virtual-edition.service
 }
 
+function reinit {
+    stop
+    sleep 30 # pause VM to stop
+    rm $script_dir/BIGIPDomainHOSTDEV.xml
+    rm $script_dir/BIGIPDomainMACVTAP.xml
+    rm $script_dir/BIGIP_USER_DATA.iso
+    rm $script_dir/cidataiso/meta-data
+    rm $script_dir/cidataiso/output.iso
+    rm $script_dir/cidataiso/user-data
+    rm $script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2
+    revert_netplan
+    reboot
+}
 
 function start {
   assure_packages 
