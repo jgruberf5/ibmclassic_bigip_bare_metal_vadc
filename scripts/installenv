@@ -361,15 +361,17 @@ function download_bigip_image {
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME='BIGIP-17.5.0-0.0.15.ALL_1SLOT-031025001.qcow2'
   [[ -z "${BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5}" ]] && BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5="$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME.md5"
   INSTANCE_DISK_NAME="$script_dir/BIGIPImages/BIG-IP-Instance-Disk.qcow2"
-  if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5"]; then
+  if [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" ] && [ -f "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5" ]; then
       echo "Existing BIG-IP virtual edition image exists.."
       download_md5=$(md5sum "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME" | cut -d' ' -f1)
       image_md5=$(cat "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_MD5")
-      if ! [ "$image_md5" == "$download_md5" ]; then
-           echo "Existing BIG-IP virtual edition image MD5SUM failed, deleting and re-downloading"
-           rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
-           rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
-           download_bigip_image
+      if [ ! "$image_md5" == "$download_md5" ]; then
+          echo "Existing BIG-IP virtual edition image MD5SUM failed, deleting and re-downloading"
+          rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+          rm -rf "$script_dir/BIGIPImages/$BIGIP_IMAGE_DOWNLOAD_IMAGE_NAME"
+          download_bigip_image
+      else
+          echo "Existing BIG-IP virtual edition image is valid.. skipping download"
       fi
   else
     mkdir -p "$script_dir/BIGIPImages"
@@ -566,7 +568,16 @@ function reinit {
     remove_bigip_userdata
     reset_bigip_instance_disk
     revert_netplan
-    reboot
+    read -p "Do you want to reboot the host machine? (y/n): " answer
+    if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+        echo "Rebooting host machine.."
+        reboot
+    else
+        read -p "Do you want to start a bigip-virtual-edition service now? (y/n): " answer
+        if [[ "$answer" == "y" || "$answer" == "Y" ]]; then
+            start
+        fi
+    fi
 }
 
 function start {
