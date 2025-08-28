@@ -119,7 +119,7 @@ echo "    content: |" >> $cloudinit_file
 
 while IFS= read -r line; do
   echo "      $line" >> $cloudinit_file
-done < "../scripts/ect_bigip_sample.txt"
+done < "../scripts/etc_bigip_sample.txt"
 
 # runcmd
 echo "runcmd: [nohup sh -c '$destination_dir/onboarding.sh' >> /var/log/F5NetworksBIGIPOnboard.log &]" >> $cloudinit_file
